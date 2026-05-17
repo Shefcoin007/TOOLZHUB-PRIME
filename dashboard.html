@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | ToolzHub-Prime</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo" onclick="window.location.href='index.html'">
+                <img src="/logo-192.png" alt="ToolzHub" class="logo-img">
+                <div class="logo-text">
+                    <span class="logo-main">TOOLZ<span class="highlight">HUB</span></span>
+                    <span class="logo-sub">PRIME</span>
+                </div>
+            </div>
+            <div class="nav-menu">
+                <a href="dashboard.html" class="nav-link active">Dashboard</a>
+                <a href="marketplace.html" class="nav-link">Marketplace</a>
+                <a href="wallet.html" class="nav-link">Wallet</a>
+                <a href="support.html" class="nav-link">Support</a>
+            </div>
+            <div class="nav-actions">
+                <button class="btn-primary" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="dashboard">
+        <div class="container">
+            <div class="dashboard-header">
+                <h1>Welcome back, <span id="userName">User</span> 👋</h1>
+                <div class="balance-card">
+                    <div class="balance-info">
+                        <span class="balance-label">Available Balance</span>
+                        <div class="balance-amount">
+                            <span class="currency">₦</span><span id="userBalance">0.00</span>
+                        </div>
+                        <div class="balance-points">
+                            <i class="fas fa-gift"></i> <span id="userPoints">0</span> Points
+                            <small>(1 point = ₦100)</small>
+                        </div>
+                    </div>
+                    <div class="balance-actions">
+                        <a href="wallet.html" class="btn-primary">
+                            <i class="fas fa-plus"></i> Add Funds
+                        </a>
+                        <button class="btn-secondary" onclick="redeemPoints()">
+                            <i class="fas fa-exchange-alt"></i> Redeem Points
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span class="stat-value" id="totalOrders">0</span>
+                    <span class="stat-label">Total Orders</span>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-check-circle"></i>
+                    <span class="stat-value success" id="completedOrders">0</span>
+                    <span class="stat-label">Completed</span>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-coins"></i>
+                    <span class="stat-value" id="totalSpent">₦0</span>
+                    <span class="stat-label">Total Spent</span>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-ticket-alt"></i>
+                    <span class="stat-value warning" id="openTickets">0</span>
+                    <span class="stat-label">Open Tickets</span>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-header">
+                    <h2>Recent Orders</h2>
+                    <a href="marketplace.html" class="btn-link">View All →</a>
+                </div>
+                <div id="recentOrders" class="orders-list"></div>
+            </div>
+
+            <div class="quick-actions">
+                <a href="marketplace.html" class="action-card">
+                    <i class="fas fa-store"></i>
+                    <span>Browse Marketplace</span>
+                </a>
+                <a href="wallet.html" class="action-card">
+                    <i class="fas fa-wallet"></i>
+                    <span>Manage Wallet</span>
+                </a>
+                <a href="support.html" class="action-card">
+                    <i class="fas fa-headset"></i>
+                    <span>Get Support</span>
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>
