@@ -53,6 +53,28 @@
                     <i class="fas fa-shopping-cart"></i>
                     <span class="cart-count" id="cartCount">0</span>
                 </button>
+                <div class="nav-actions">
+  <!-- Currency Selector -->
+    <div class="currency-selector">
+        <select id="currencySelect" onchange="changeCurrency(this.value)">
+            <option value="NGN">₦ NGN</option>
+            <option value="USD">$ USD</option>
+            <option value="GBP">£ GBP</option>
+            <option value="EUR">€ EUR</option>
+        </select>
+    </div>
+    
+    <button class="btn-ghost" onclick="toggleTheme()">
+        <i class="fas fa-moon" id="themeIcon"></i>
+    </button>
+    <button class="btn-primary" id="authBtn" onclick="toggleAuthModal()">
+        <i class="fas fa-user"></i> <span id="authText">Get Started</span>
+    </button>
+    <button class="btn-cart" onclick="toggleCart()" id="cartBtn" style="display:none;">
+        <i class="fas fa-shopping-cart"></i>
+        <span class="cart-count" id="cartCount">0</span>
+    </button>
+</div>
             </div>
 
             <button class="mobile-toggle" onclick="toggleMobileMenu()">
