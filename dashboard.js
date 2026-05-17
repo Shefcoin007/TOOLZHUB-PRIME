@@ -207,3 +207,31 @@ async function logout() {
     await supabaseClient.auth.signOut();
     window.location.href = 'index.html';
 }
+function toggleProfileModal() {
+    const modal = document.getElementById('editProfileModal');
+    if (!modal) return;
+    
+    if (modal.classList.contains('active')) {
+        modal.classList.remove('active');
+    } else {
+        // Load current profile data
+        document.getElementById('profileName').value = document.getElementById('userName').textContent;
+        document.getElementById('profileEmail').value = currentUser.email;
+        document.getElementById('profilePhone').value = ''; // Load from profile if available
+        modal.classList.add('active');
+    }
+}
+
+async function handleProfileUpdate(e) {
+    e.preventDefault();
+    
+    const fullName = document.getElementById('profileName').value;
+    const phone = document.getElementById('profilePhone').value;
+    
+    await updateProfile({
+        full_name: fullName,
+        phone: phone || null
+    });
+    
+    toggleProfileModal();
+}
