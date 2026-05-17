@@ -4,21 +4,14 @@
 
 const SUPABASE_URL = 'https://nhlbctiitrjqtfsnhyvt.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5obGJjdGlpdHJqcXRmc25oeXZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMDIwNTcsImV4cCI6MjA5NDU3ODA1N30._nqkfipQgR3QzRii3C8zFtPckzxktOWmtlHs7PrntWc';
-const GOOGLE_CLIENT_ID = '204905426386-1opadlvd43t0uldv5q7hbvhv4vhdakfk.apps.googleusercontent.com';
 
 // Initialize Supabase ONCE
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Global State
 let currentUser = null;
-let cart = [];
+let cart = JSON.parse(localStorage.getItem('cart') || '[]');
 let products = [];
-
-// Constants
-const POINTS_PER_ORDER = 1;
-const POINTS_VALUE = 100;
-const ADMIN_EMAIL = 'walijimoh007@gmail.com';
-const SUPPORT_PHONE = '09087805425';
 
 // ============================================
 // INIT
@@ -32,11 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initApp() {
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-        cart = JSON.parse(savedCart);
-        updateCartCount();
-    }
+    updateCartCount();
     
     const theme = localStorage.getItem('theme');
     if (theme === 'dark') {
@@ -47,7 +36,7 @@ function initApp() {
 }
 
 // ============================================
-// AUTH
+// AUTH FUNCTIONS
 // ============================================
 
 async function checkAuth() {
@@ -91,15 +80,56 @@ async function handleRegister(e) {
         const { error } = await supabaseClient.auth.signUp({
             email,
             password,
-            options: { data: { full_name: name } }
+            options: { 
+                data: { full_name: name },
+                emailRedirectTo: window.location.origin + '/TOOLZHUB-PRIME/dashboard.html'
+            }
         });
         if (error) throw error;
         
-        showToast('Account created! Check your email.', 'success');
+        showToast('Account created! Check your email to verify.', 'success');
         document.getElementById('registerForm')?.reset();
         switchAuthTab('login');
     } catch (err) {
         showToast('Registration failed: ' + err.message, 'error');
+    }
+}
+
+// ✅ NEW: Forgot Password Function
+async function handleForgotPassword(e) {
+    e.preventDefault();
+    const email = document.getElementById('forgotEmail')?.value;
+    
+    if (!email) {
+        showToast('Please enter your email', 'error');
+        return;
+    }
+    
+    try {
+        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + '/TOOLZHUB-PRIME/dashboard.html'
+        });
+        if (error) throw error;
+        
+        showToast('Password reset link sent to your email!', 'success');
+        toggleForgotPasswordModal();
+        document.getElementById('forgotPasswordForm')?.reset();
+    } catch (err) {
+        showToast('Failed: ' + err.message, 'error');
+    }
+}
+
+// ✅ NEW: Update Password (after reset)
+async function updatePassword(newPassword) {
+    try {
+        const { error } = await supabaseClient.auth.updateUser({
+            password: newPassword
+        });
+        if (error) throw error;
+        
+        showToast('Password updated successfully!', 'success');
+    } catch (err) {
+        showToast('Failed: ' + err.message, 'error');
     }
 }
 
@@ -108,7 +138,11 @@ async function signInWithGoogle() {
         const { error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: window.location.origin + '/TOOLZHUB-PRIME/dashboard.html'
+                redirectTo: window.location.origin + '/TOOLZHUB-PRIME/dashboard.html',
+                queryParams: { 
+                    access_type: 'offline', 
+                    prompt: 'consent' 
+                }
             }
         });
         if (error) throw error;
@@ -144,10 +178,41 @@ async function logout() {
 }
 
 // ============================================
-// PRODUCTS
+// PRODUCTS - FETCH FROM LOGGSPLUG
 // ============================================
 
 async function loadProducts() {
+    const grid = document.getElementById('productsGrid');
+    if (!grid) return;
+    
+    try {
+        // Try to fetch from LoggsPlug API
+        const response = await fetch('https://loggsplug.online/api/products');
+        const data = await response.json();
+        
+        if (data && data.products) {
+            products = data.products.map(p => ({
+                id: p.id || p._id,
+                name: p.name || p.title,
+                category: p.category || 'general',
+                description: p.description || '',
+                price: p.price || 0,
+                stock: p.stock || 999,
+                is_featured: p.featured || false
+            }));
+        } else {
+            // Fallback to Supabase
+            await loadProductsFromSupabase();
+        }
+    } catch (err) {
+        console.error('LoggsPlug fetch error:', err);
+        await loadProductsFromSupabase();
+    }
+    
+    renderProducts(products);
+}
+
+async function loadProductsFromSupabase() {
     try {
         const { data, error } = await supabaseClient
             .from('products')
@@ -157,20 +222,18 @@ async function loadProducts() {
         
         if (error) throw error;
         products = data || [];
-        renderProducts(products);
     } catch (err) {
-        console.error('Load products error:', err);
-        renderSampleProducts();
+        console.error('Supabase load error:', err);
+        products = getSampleProducts();
     }
 }
 
-function renderSampleProducts() {
-    products = [
+function getSampleProducts() {
+    return [
         { id: '1', name: '9PROXY 200IPS Unlimited', category: 'proxy', description: 'High-speed residential proxies', price: 31000, stock: 50, is_featured: true },
         { id: '2', name: 'Premium USA Logs', category: 'logs', description: 'Verified USA logs', price: 15000, stock: 30, is_featured: true },
         { id: '3', name: 'Advanced Blueprint Pack', category: 'blueprint', description: 'Complete guide with videos', price: 25000, stock: 999, is_featured: true }
     ];
-    renderProducts(products);
 }
 
 function renderProducts(list) {
@@ -178,7 +241,7 @@ function renderProducts(list) {
     if (!grid) return;
     
     if (!list.length) {
-        grid.innerHTML = '<p>No products available</p>';
+        grid.innerHTML = '<p class="empty-state">No products available</p>';
         return;
     }
     
@@ -200,7 +263,7 @@ function renderProducts(list) {
 }
 
 // ============================================
-// CART
+// CART FUNCTIONS
 // ============================================
 
 function addToCart(productId) {
@@ -229,6 +292,43 @@ function toggleCart() {
     const modal = document.getElementById('cartModal');
     if (!modal) return;
     modal.classList.toggle('active');
+    if (modal.classList.contains('active')) renderCart();
+}
+
+function renderCart() {
+    const container = document.getElementById('cartItems');
+    const footer = document.getElementById('cartFooter');
+    if (!container || !footer) return;
+    
+    if (!cart.length) {
+        container.innerHTML = '<p class="empty-state">Your cart is empty</p>';
+        footer.style.display = 'none';
+        return;
+    }
+    
+    container.innerHTML = cart.map(item => `
+        <div class="cart-item">
+            <div class="cart-item-info">
+                <h4>${item.name}</h4>
+                <p>₦${item.price.toLocaleString()} × ${item.quantity}</p>
+                <strong>₦${(item.price * item.quantity).toLocaleString()}</strong>
+            </div>
+            <button class="btn-remove" onclick="removeFromCart('${item.id}')">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `).join('');
+    
+    const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    document.getElementById('cartTotal').textContent = total.toLocaleString();
+    footer.style.display = 'block';
+}
+
+function removeFromCart(productId) {
+    cart = cart.filter(item => item.id !== productId);
+    localStorage.setItem('cart', JSON.stringify(cart));
+    updateCartCount();
+    renderCart();
 }
 
 async function checkout() {
@@ -240,7 +340,9 @@ async function checkout() {
     }
     
     const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    showToast(`Checkout: ₦${total.toLocaleString()} (Demo)`, 'success');
+    showToast(`Processing checkout: ₦${total.toLocaleString()}`, 'success');
+    
+    // TODO: Integrate payment gateway
     cart = [];
     localStorage.setItem('cart', '[]');
     updateCartCount();
@@ -248,11 +350,16 @@ async function checkout() {
 }
 
 // ============================================
-// UI UTILS
+// UI MODAL FUNCTIONS
 // ============================================
 
 function toggleAuthModal() {
     const modal = document.getElementById('authModal');
+    if (modal) modal.classList.toggle('active');
+}
+
+function toggleForgotPasswordModal() {
+    const modal = document.getElementById('forgotPasswordModal');
     if (modal) modal.classList.toggle('active');
 }
 
@@ -307,12 +414,15 @@ function showToast(msg, type = 'success') {
 
 // Expose functions globally
 window.addToCart = addToCart;
+window.removeFromCart = removeFromCart;
 window.toggleCart = toggleCart;
 window.checkout = checkout;
 window.toggleAuthModal = toggleAuthModal;
+window.toggleForgotPasswordModal = toggleForgotPasswordModal;
 window.switchAuthTab = switchAuthTab;
 window.handleLogin = handleLogin;
 window.handleRegister = handleRegister;
+window.handleForgotPassword = handleForgotPassword;
 window.signInWithGoogle = signInWithGoogle;
 window.logout = logout;
 window.toggleTheme = toggleTheme;
