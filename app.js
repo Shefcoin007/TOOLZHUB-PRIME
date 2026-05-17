@@ -1,5 +1,5 @@
 // ============================================
-// TOOLZHUB-PRIME - PRODUCTION CONFIG
+// CONFIGURATION
 // ============================================
 
 const SUPABASE_URL = 'https://nhlbctiitrjqtfsnhyvt.supabase.co';
@@ -7,20 +7,15 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ============================================
-// LOGGSPLUG API + FALLBACK SYSTEM
-// ============================================
-
 const LOGGSPLUG_API_KEY = 'rsl_G1d2VNRaQrKvdy0Yt40bCbuU7oVruVlrJE9tkxlBiLvPT2FD';
 const LOGGSPLUG_API_URL = 'https://loggsplug.online/api';
-const PROFIT_MARKUP = 1.5; // 50% profit
+const PROFIT_MARKUP = 1.5;
 
-// Currency rates (1 NGN = X)
 const CURRENCIES = {
-    NGN: { symbol: '₦', rate: 1, name: 'Nigerian Naira' },
-    USD: { symbol: '$', rate: 0.00065, name: 'US Dollar' },
-    GBP: { symbol: '£', rate: 0.00051, name: 'British Pound' },
-    EUR: { symbol: '€', rate: 0.00060, name: 'Euro' }
+    NGN: { symbol: '₦', rate: 1 },
+    USD: { symbol: '$', rate: 0.00065 },
+    GBP: { symbol: '£', rate: 0.00051 },
+    EUR: { symbol: '€', rate: 0.00060 }
 };
 
 let currentCurrency = localStorage.getItem('currency') || 'NGN';
@@ -29,23 +24,18 @@ let cart = JSON.parse(localStorage.getItem('cart') || '[]');
 let currentUser = null;
 
 // ============================================
-// INITIALIZATION
+// INIT
 // ============================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    if (typeof AOS !== 'undefined') AOS.init({ duration: 800, once: true });
-    
     initApp();
-    loadProducts(); // Will try API, fallback to Supabase, then samples
+    loadProducts();
     checkAuth();
-    setupEventListeners();
-    updateCurrencyDisplay();
 });
 
 function initApp() {
     updateCartCount();
     
-    // Load theme
     const theme = localStorage.getItem('theme');
     if (theme === 'dark') {
         document.body.classList.add('dark-mode');
@@ -53,74 +43,48 @@ function initApp() {
         if (icon) icon.className = 'fas fa-sun';
     }
     
-    // Set currency selector
-    const currencySelect = document.getElementById('currencySelect');
-    if (currencySelect) currencySelect.value = currentCurrency;
-}
-
-function setupEventListeners() {
-    // Close modals on outside click
-    document.querySelectorAll('.modal').forEach(modal => {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) modal.classList.remove('active');
-        });
-    });
-    
-    // Navbar scroll
-    window.addEventListener('scroll', () => {
-        const navbar = document.getElementById('navbar');
-        if (navbar) {
-            navbar.classList.toggle('scrolled', window.scrollY > 50);
-        }
-    });
+    const select = document.getElementById('currencySelect');
+    if (select) select.value = currentCurrency;
 }
 
 // ============================================
-// PRODUCT LOADING - 3-TIER FALLBACK
+// PRODUCTS - 3-TIER FALLBACK
 // ============================================
 
 async function loadProducts() {
     const grid = document.getElementById('productsGrid');
     if (!grid) return;
     
-    // Show loading
     grid.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading products...</p></div>';
     
     try {
-        // Tier 1: Try LoggsPlug API
-        console.log('Attempting LoggsPlug API...');
+        // Try LoggsPlug API
         const apiProducts = await fetchFromLoggsPlug();
-        
-        if (apiProducts && apiProducts.length > 0) {
+        if (apiProducts.length > 0) {
             products = apiProducts;
-            console.log(`✅ Loaded ${products.length} products from LoggsPlug`);
             renderProducts(products);
+            console.log('✅ Loaded from LoggsPlug:', products.length);
             return;
         }
-        
-    } catch (apiError) {
-        console.warn('LoggsPlug API failed:', apiError.message);
+    } catch (e) {
+        console.warn('LoggsPlug failed:', e.message);
     }
     
     try {
-        // Tier 2: Try Supabase
-        console.log('Attempting Supabase...');
-        const supabaseProducts = await fetchFromSupabase();
-        
-        if (supabaseProducts && supabaseProducts.length > 0) {
-            products = supabaseProducts;
-            console.log(`✅ Loaded ${products.length} products from Supabase`);
+        // Try Supabase
+        const dbProducts = await fetchFromSupabase();
+        if (dbProducts.length > 0) {
+            products = dbProducts;
             renderProducts(products);
-            showToast('Using local products (API unavailable)', 'warning');
+            showToast('Using local products', 'warning');
+            console.log('✅ Loaded from Supabase:', products.length);
             return;
         }
-        
-    } catch (dbError) {
-        console.warn('Supabase failed:', dbError.message);
+    } catch (e) {
+        console.warn('Supabase failed:', e.message);
     }
     
-    // Tier 3: Use sample products
-    console.log('Using sample products');
+    // Fallback to samples
     products = getSampleProducts();
     renderProducts(products);
     showToast('Showing sample products', 'warning');
@@ -128,30 +92,26 @@ async function loadProducts() {
 
 async function fetchFromLoggsPlug() {
     const response = await fetch(`${LOGGSPLUG_API_URL}/products`, {
-        method: 'GET',
         headers: {
-            'Content-Type': 'application/json',
             'Authorization': `Bearer ${LOGGSPLUG_API_KEY}`,
             'Accept': 'application/json'
-        },
-        timeout: 10000 // 10 second timeout
+        }
     });
     
-    if (!response.ok) throw new Error(`API Error: ${response.status}`);
+    if (!response.ok) throw new Error(`API ${response.status}`);
     
     const data = await response.json();
-    const rawProducts = data.products || data.data || data;
+    const raw = data.products || data.data || data;
     
-    return rawProducts.map(p => ({
-        id: p.id || p._id || `prod_${Date.now()}_${Math.random()}`,
-        name: p.name || p.title || 'Premium Digital Asset',
-        category: mapCategory(p.category || p.type || 'general'),
-        description: p.description || p.details || 'High-quality digital product',
-        price: (parseFloat(p.price || p.amount || 0) * PROFIT_MARKUP),
-        priceNGN: parseFloat(p.price || p.amount || 0) * PROFIT_MARKUP,
-        stock: parseInt(p.stock || p.quantity || 999),
-        is_featured: p.featured || false,
-        image: p.image || null
+    return raw.map(p => ({
+        id: p.id || p._id || `p${Date.now()}`,
+        name: p.name || p.title || 'Product',
+        category: mapCategory(p.category || 'general'),
+        description: p.description || 'Digital product',
+        price: (parseFloat(p.price || 0) * PROFIT_MARKUP),
+        priceNGN: parseFloat(p.price || 0) * PROFIT_MARKUP,
+        stock: parseInt(p.stock || 999),
+        is_featured: p.featured || false
     }));
 }
 
@@ -159,8 +119,7 @@ async function fetchFromSupabase() {
     const { data, error } = await supabaseClient
         .from('products')
         .select('*')
-        .eq('is_active', true)
-        .order('is_featured', { ascending: false });
+        .eq('is_active', true);
     
     if (error) throw error;
     
@@ -172,226 +131,107 @@ async function fetchFromSupabase() {
         price: p.price * PROFIT_MARKUP,
         priceNGN: p.price * PROFIT_MARKUP,
         stock: p.stock,
-        is_featured: p.is_featured,
-        image: p.image_url
+        is_featured: p.is_featured
     }));
 }
 
 function getSampleProducts() {
     return [
-        { 
-            id: '1', 
-            name: '9PROXY 200IPS Unlimited', 
-            category: 'proxy', 
-            description: 'High-speed residential proxies with unlimited bandwidth', 
-            price: 46500,
-            priceNGN: 46500,
-            stock: 50, 
-            is_featured: true 
-        },
-        { 
-            id: '2', 
-            name: 'Premium USA Logs', 
-            category: 'logs', 
-            description: 'Verified USA logs with full information', 
-            price: 22500,
-            priceNGN: 22500,
-            stock: 30, 
-            is_featured: true 
-        },
-        { 
-            id: '3', 
-            name: 'Advanced Blueprint Pack', 
-            category: 'blueprint', 
-            description: 'Complete guide with video walkthroughs', 
-            price: 37500,
-            priceNGN: 37500,
-            stock: 999, 
-            is_featured: true 
-        },
-        { 
-            id: '4', 
-            name: 'UK Bank Logs Bundle', 
-            category: 'logs', 
-            description: 'Tested UK banking logs with high success rate', 
-            price: 18000,
-            priceNGN: 18000,
-            stock: 45, 
-            is_featured: false 
-        }
+        { id: '1', name: '9PROXY 200IPS Unlimited', category: 'proxy', description: 'High-speed residential proxies', price: 46500, priceNGN: 46500, stock: 50, is_featured: true },
+        { id: '2', name: 'Premium USA Logs', category: 'logs', description: 'Verified USA logs', price: 22500, priceNGN: 22500, stock: 30, is_featured: true },
+        { id: '3', name: 'Advanced Blueprint Pack', category: 'blueprint', description: 'Complete guide with videos', price: 37500, priceNGN: 37500, stock: 999, is_featured: true }
     ];
 }
 
-function mapCategory(cat) {
-    const map = {
-        'proxy': 'proxy', 'proxies': 'proxy',
-        'log': 'logs', 'logs': 'logs', 'fullz': 'logs',
-        'blueprint': 'blueprint', 'guide': 'blueprint',
-        'update': 'update', 'tool': 'update'
-    };
-    return map[cat.toLowerCase()] || 'general';
+function mapCategory(c) {
+    const m = { 'proxy': 'proxy', 'proxies': 'proxy', 'log': 'logs', 'logs': 'logs', 'blueprint': 'blueprint', 'guide': 'blueprint', 'update': 'update' };
+    return m[c.toLowerCase()] || 'general';
 }
-
-// ============================================
-// RENDER & FILTER
-// ============================================
 
 function renderProducts(list) {
     const grid = document.getElementById('productsGrid');
     if (!grid) return;
     
-    if (!list || list.length === 0) {
-        grid.innerHTML = '<div class="empty-state"><i class="fas fa-box-open"></i><h3>No products available</h3></div>';
+    if (!list.length) {
+        grid.innerHTML = '<div class="empty-state"><h3>No products</h3></div>';
         return;
     }
     
-    const symbol = CURRENCIES[currentCurrency].symbol;
+    const sym = CURRENCIES[currentCurrency].symbol;
     
-    grid.innerHTML = list.map(p => {
-        const displayPrice = formatPrice(p.priceNGN);
-        return `
-        <div class="product-card" data-category="${p.category}">
+    grid.innerHTML = list.map(p => `
+        <div class="product-card">
             ${p.is_featured ? '<span class="product-badge">Featured</span>' : ''}
             <div class="product-category">${p.category.toUpperCase()}</div>
             <h3 class="product-title">${p.name}</h3>
             <p class="product-description">${p.description}</p>
             <div class="product-footer">
-                <div class="product-price">${displayPrice}</div>
+                <div class="product-price">${sym}${(p.priceNGN * CURRENCIES[currentCurrency].rate).toLocaleString()}</div>
                 <div class="product-stock">${p.stock} in stock</div>
             </div>
             <button class="btn-add-cart" onclick="addToCart('${p.id}')">
                 <i class="fas fa-shopping-cart"></i> Add to Cart
             </button>
         </div>
-    `}).join('');
-}
-
-function formatPrice(ngnAmount) {
-    const converted = ngnAmount * CURRENCIES[currentCurrency].rate;
-    const symbol = CURRENCIES[currentCurrency].symbol;
-    return `${symbol}${converted.toLocaleString()}`;
-}
-
-function updateCurrencyDisplay() {
-    const select = document.getElementById('currencySelect');
-    if (select) select.value = currentCurrency;
-    
-    // Re-render products with new currency
-    if (products.length > 0) {
-        renderProducts(products);
-    }
-}
-
-function changeCurrency(currency) {
-    if (!CURRENCIES[currency]) return;
-    currentCurrency = currency;
-    localStorage.setItem('currency', currency);
-    updateCurrencyDisplay();
-}
-
-function filterByCategory(category) {
-    // Update active button
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.textContent.toLowerCase().includes(category) || 
-            (category === 'all' && btn.textContent.includes('All'))) {
-            btn.classList.add('active');
-        }
-    });
-    
-    if (category === 'all') {
-        renderProducts(products);
-    } else {
-        renderProducts(products.filter(p => p.category === category));
-    }
-}
-
-function filterProducts() {
-    const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
-    if (!search) {
-        renderProducts(products);
-        return;
-    }
-    
-    const filtered = products.filter(p => 
-        p.name.toLowerCase().includes(search) ||
-        p.description.toLowerCase().includes(search)
-    );
-    renderProducts(filtered);
+    `).join('');
 }
 
 // ============================================
-// CART FUNCTIONS
+// CART
 // ============================================
 
-function addToCart(productId) {
-    const product = products.find(p => p.id === productId);
-    if (!product) return;
+function addToCart(id) {
+    const p = products.find(x => x.id === id);
+    if (!p) return;
     
-    const existing = cart.find(item => item.id === productId);
-    if (existing) {
-        existing.quantity += 1;
-    } else {
-        cart.push({ ...product, quantity: 1 });
-    }
+    const ex = cart.find(x => x.id === id);
+    if (ex) ex.quantity++;
+    else cart.push({ ...p, quantity: 1 });
     
     localStorage.setItem('cart', JSON.stringify(cart));
     updateCartCount();
-    showToast(`${product.name} added to cart!`, 'success');
+    showToast(`${p.name} added!`, 'success');
 }
 
 function updateCartCount() {
-    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+    const n = cart.reduce((s, i) => s + i.quantity, 0);
     const el = document.getElementById('cartCount');
-    if (el) el.textContent = count;
+    if (el) el.textContent = n;
 }
 
 function toggleCart() {
-    const modal = document.getElementById('cartModal');
-    if (!modal) return;
-    modal.classList.toggle('active');
-    if (modal.classList.contains('active')) renderCart();
+    const m = document.getElementById('cartModal');
+    if (!m) return;
+    m.classList.toggle('active');
+    if (m.classList.contains('active')) renderCart();
 }
 
 function renderCart() {
-    const container = document.getElementById('cartItems');
-    const footer = document.getElementById('cartFooter');
-    if (!container || !footer) return;
+    const c = document.getElementById('cartItems');
+    const f = document.getElementById('cartFooter');
+    if (!c || !f) return;
     
     if (!cart.length) {
-        container.innerHTML = '<div class="empty-cart"><i class="fas fa-shopping-cart"></i><p>Your cart is empty</p></div>';
-        footer.style.display = 'none';
+        c.innerHTML = '<p>Your cart is empty</p>';
+        f.style.display = 'none';
         return;
     }
     
-    const symbol = CURRENCIES[currentCurrency].symbol;
-    
-    container.innerHTML = cart.map(item => `
-        <div class="cart-item">
-            <div class="cart-item-info">
-                <h4>${item.name}</h4>
-                <p>${symbol}${item.price.toLocaleString()} × ${item.quantity}</p>
-            </div>
-            <button class="btn-remove" onclick="removeFromCart('${item.id}')">
-                <i class="fas fa-trash"></i>
-            </button>
+    const sym = CURRENCIES[currentCurrency].symbol;
+    c.innerHTML = cart.map(i => `
+        <div style="padding:12px;border-bottom:1px solid var(--border-color)">
+            <strong>${i.name}</strong><br>
+            <small>${sym}${i.price.toLocaleString()} × ${i.quantity}</small>
         </div>
     `).join('');
     
-    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
     document.getElementById('cartTotal').textContent = total.toLocaleString();
-    footer.style.display = 'flex';
-}
-
-function removeFromCart(productId) {
-    cart = cart.filter(item => item.id !== productId);
-    localStorage.setItem('cart', JSON.stringify(cart));
-    updateCartCount();
-    renderCart();
+    f.style.display = 'flex';
 }
 
 // ============================================
-// AUTH & UI
+// AUTH
 // ============================================
 
 async function checkAuth() {
@@ -402,61 +242,55 @@ async function checkAuth() {
     }
 }
 
-function updateAuthUI(isLoggedIn) {
-    const authBtn = document.getElementById('authBtn');
-    const cartBtn = document.getElementById('cartBtn');
+function updateAuthUI(logged) {
+    const btn = document.getElementById('authBtn');
+    const cart = document.getElementById('cartBtn');
     
-    if (isLoggedIn) {
-        if (authBtn) {
-            authBtn.innerHTML = '<i class="fas fa-user-circle"></i> <span>Dashboard</span>';
-            authBtn.onclick = () => window.location.href = 'dashboard.html';
+    if (logged) {
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-user-circle"></i> Dashboard';
+            btn.onclick = () => window.location.href = 'dashboard.html';
         }
-        if (cartBtn) cartBtn.style.display = 'flex';
+        if (cart) cart.style.display = 'flex';
     } else {
-        if (authBtn) {
-            authBtn.innerHTML = '<i class="fas fa-user"></i> <span>Get Started</span>';
-            authBtn.onclick = toggleAuthModal;
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-user"></i> Get Started';
+            btn.onclick = toggleAuthModal;
         }
-        if (cartBtn) cartBtn.style.display = 'none';
+        if (cart) cart.style.display = 'none';
     }
 }
 
 function toggleAuthModal() {
-    const modal = document.getElementById('authModal');
-    if (modal) modal.classList.toggle('active');
+    const m = document.getElementById('authModal');
+    if (m) m.classList.toggle('active');
 }
 
 async function handleLogin(e) {
     e.preventDefault();
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-    
-    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    const { error } = await supabaseClient.auth.signInWithPassword({
+        email: document.getElementById('loginEmail').value,
+        password: document.getElementById('loginPassword').value
+    });
     if (error) {
         showToast('Login failed: ' + error.message, 'error');
         return;
     }
-    
     location.reload();
 }
 
 async function handleRegister(e) {
     e.preventDefault();
-    const name = document.getElementById('registerName').value;
-    const email = document.getElementById('registerEmail').value;
-    const password = document.getElementById('registerPassword').value;
-    
     const { error } = await supabaseClient.auth.signUp({
-        email, password,
-        options: { data: { full_name: name } }
+        email: document.getElementById('registerEmail').value,
+        password: document.getElementById('registerPassword').value,
+        options: { data: { full_name: document.getElementById('registerName').value } }
     });
-    
     if (error) {
-        showToast('Registration failed: ' + error.message, 'error');
+        showToast('Failed: ' + error.message, 'error');
         return;
     }
-    
-    showToast('Account created! Check your email.', 'success');
+    showToast('Check your email!', 'success');
 }
 
 async function signInWithGoogle() {
@@ -466,53 +300,56 @@ async function signInWithGoogle() {
     });
 }
 
-async function logout() {
-    await supabaseClient.auth.signOut();
-    location.reload();
+// ============================================
+// UTILS
+// ============================================
+
+function switchAuthTab(tab) {
+    document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+    document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
 }
 
 function toggleTheme() {
     document.body.classList.toggle('dark-mode');
-    const isDark = document.body.classList.contains('dark-mode');
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    
+    const dark = document.body.classList.contains('dark-mode');
+    localStorage.setItem('theme', dark ? 'dark' : 'light');
     const icon = document.getElementById('themeIcon');
-    if (icon) icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+    if (icon) icon.className = dark ? 'fas fa-sun' : 'fas fa-moon';
 }
 
 function toggleMobileMenu() {
-    const menu = document.getElementById('navMenu');
-    if (menu) menu.classList.toggle('active');
+    const m = document.getElementById('navMenu');
+    if (m) m.classList.toggle('active');
+}
+
+function changeCurrency(cur) {
+    if (!CURRENCIES[cur]) return;
+    currentCurrency = cur;
+    localStorage.setItem('currency', cur);
+    if (products.length) renderProducts(products);
 }
 
 function showToast(msg, type = 'success') {
-    const container = document.getElementById('toastContainer') || document.body;
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check' : 'fa-exclamation'}"></i><span>${msg}</span>`;
-    
-    container.appendChild(toast);
+    const c = document.getElementById('toastContainer');
+    if (!c) return;
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.innerHTML = `<span>${msg}</span>`;
+    c.appendChild(t);
     setTimeout(() => {
-        toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 300);
+        t.style.opacity = '0';
+        setTimeout(() => t.remove(), 300);
     }, 3000);
 }
 
-// Expose functions
+// Expose
 window.addToCart = addToCart;
-window.removeFromCart = removeFromCart;
 window.toggleCart = toggleCart;
 window.toggleAuthModal = toggleAuthModal;
-window.switchAuthTab = (tab) => {
-    document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
-    document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
-};
+window.switchAuthTab = switchAuthTab;
 window.handleLogin = handleLogin;
 window.handleRegister = handleRegister;
 window.signInWithGoogle = signInWithGoogle;
-window.logout = logout;
 window.toggleTheme = toggleTheme;
 window.toggleMobileMenu = toggleMobileMenu;
 window.changeCurrency = changeCurrency;
-window.filterByCategory = filterByCategory;
-window.filterProducts = filterProducts;
