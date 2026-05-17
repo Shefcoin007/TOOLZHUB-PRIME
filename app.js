@@ -1,3 +1,40 @@
+// Handle OAuth redirect on page load
+async function handleOAuthRedirect() {
+    const hash = window.location.hash;
+    if (hash && hash.includes('access_token')) {
+        try {
+            const { data: { session }, error } = await supabaseClient.auth.getSession();
+            if (error) throw error;
+            
+            if (session) {
+                currentUser = session.user;
+                updateAuthUI(true);
+                showToast('Login successful!', 'success');
+                
+                // Clean up URL
+                window.history.replaceState({}, document.title, '/TOOLZHUB-PRIME/dashboard.html');
+                
+                // Redirect to dashboard
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1000);
+            }
+        } catch (err) {
+            console.error('OAuth redirect error:', err);
+            showToast('Authentication failed: ' + err.message, 'error');
+        }
+    }
+}
+
+// Call this on page load
+document.addEventListener('DOMContentLoaded', () => {
+    handleOAuthRedirect(); // ✅ Handle OAuth callback
+    if (typeof AOS !== 'undefined') AOS.init({ duration: 800, once: true });
+    initApp();
+    loadProducts();
+    checkAuth();
+});
+
 // ============================================
 // TOOLZHUB-PRIME - PRODUCTION CONFIG
 // ============================================
