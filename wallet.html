@@ -1,233 +1,187 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wallet | ToolzHub-Prime</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body>
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="logo" onclick="window.location.href='index.html'">
-                <img src="/logo-192.png" alt="ToolzHub" class="logo-img">
-                <div class="logo-text">
-                    <span class="logo-main">TOOLZ<span class="highlight">HUB</span></span>
-                    <span class="logo-sub">PRIME</span>
+// Korapay Payment Link
+const KORAPAY_LINK = 'https://test-checkout.korapay.com/pay/QKaF9T6aabNMaKF';
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    
+    if (!session) {
+        window.location.href = 'index.html';
+        return;
+    }
+    
+    currentUser = session.user;
+    await loadWallet();
+});
+
+async function loadWallet() {
+    try {
+        // Load profile
+        const { data: profile } = await supabaseClient
+            .from('profiles')
+            .select('balance, points')
+            .eq('id', currentUser.id)
+            .single();
+        
+        if (profile) {
+            document.getElementById('userBalance').textContent = (profile.balance || 0).toFixed(2);
+            document.getElementById('userPoints').textContent = profile.points || 0;
+        }
+        
+        // Load transactions
+        await loadTransactions();
+        
+    } catch (err) {
+        console.error('Wallet load error:', err);
+    }
+}
+
+async function loadTransactions() {
+    try {
+        const { data: txs } = await supabaseClient
+            .from('transactions')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .order('created_at', { ascending: false })
+            .limit(20);
+        
+        const container = document.getElementById('transactionsList');
+        if (!container) return;
+        
+        if (!txs || txs.length === 0) {
+            container.innerHTML = '<p class="empty-state">No transactions yet</p>';
+            return;
+        }
+        
+        container.innerHTML = txs.map(tx => `
+            <div class="transaction-item">
+                <div class="tx-info">
+                    <strong>${tx.type.toUpperCase()}</strong>
+                    <small>${new Date(tx.created_at).toLocaleString()}</small>
+                    ${tx.method ? `<span class="tx-method">${tx.method}</span>` : ''}
                 </div>
-            </div>
-            <div class="nav-menu">
-                <a href="dashboard.html" class="nav-link">Dashboard</a>
-                <a href="marketplace.html" class="nav-link">Marketplace</a>
-                <a href="wallet.html" class="nav-link active">Wallet</a>
-                <a href="support.html" class="nav-link">Support</a>
-            </div>
-            <div class="nav-actions">
-                <button class="btn-primary" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </button>
-            </div>
-        </div>
-    </nav>
-
-    <main class="page">
-        <div class="container">
-            <div class="page-header">
-                <h1>My Wallet</h1>
-                <p>Manage your balance and transactions</p>
-            </div>
-
-            <!-- Balance Card -->
-            <div class="balance-card-large">
-                <div class="balance-info">
-                    <span class="balance-label">Available Balance</span>
-                    <div class="balance-amount">
-                        <span class="currency">₦</span><span id="userBalance">0.00</span>
-                    </div>
-                    <div class="balance-points">
-                        <i class="fas fa-gift"></i> <span id="userPoints">0</span> Points 
-                        <small>(1 point = ₦100)</small>
-                    </div>
+                <div class="tx-amount ${tx.type === 'purchase' || tx.type === 'withdrawal' ? 'negative' : 'positive'}">
+                    ${tx.type === 'purchase' || tx.type === 'withdrawal' ? '-' : '+'}₦${tx.amount.toLocaleString()}
                 </div>
-                <div class="balance-actions">
-                    <button class="btn-primary" onclick="showFundModal()">
-                        <i class="fas fa-plus"></i> Add Funds
-                    </button>
-                    <button class="btn-secondary" onclick="redeemPoints()">
-                        <i class="fas fa-exchange-alt"></i> Redeem Points
-                    </button>
-                </div>
+                <span class="tx-status ${tx.status}">${tx.status}</span>
             </div>
+        `).join('');
+        
+    } catch (err) {
+        console.error('Error loading transactions:', err);
+    }
+}
 
-            <!-- Fund Form -->
-            <div class="fund-section">
-                <h3>Add Funds</h3>
-                <form id="fundForm" onsubmit="handleFundSubmit(event)" class="fund-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Amount (₦)</label>
-                            <input type="number" id="fundAmount" min="1000" step="100" required placeholder="Enter amount">
-                        </div>
-                        <div class="form-group">
-                            <label>Payment Method</label>
-                            <select id="fundMethod" required>
-                                <option value="bank">Bank Transfer</option>
-                                <option value="card">Card Payment</option>
-                                <option value="crypto">Cryptocurrency</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Transaction Reference (Optional)</label>
-                        <input type="text" id="fundReference" placeholder="Payment reference from your bank">
-                    </div>
-                    <button type="submit" class="btn-primary">
-                        <i class="fas fa-wallet"></i> Submit Fund Request
-                    </button>
-                    <p class="form-note">
-                        <i class="fas fa-info-circle"></i> 
-                        Bank transfers are verified manually. Contact <a href="https://wa.me/2349087805425">WhatsApp</a> for instant confirmation.
-                    </p>
-                </form>
-            </div>
-
-            <!-- Transactions -->
-            <div class="section">
-                <h3>Transaction History</h3>
-                <div id="transactionsList" class="transactions-list">
-                    <p class="empty-state">Loading transactions...</p>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Fund Modal -->
-    <div class="modal" id="fundModal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="document.getElementById('fundModal').classList.remove('active')">&times;</button>
-            <h3>Fund Your Wallet</h3>
-            <div class="fund-instructions">
-                <p><strong>Bank Transfer Details:</strong></p>
-                <p>Account Name: ToolzHub-Prime<br>
-                Account Number: [Your Account]<br>
-                Bank: [Your Bank]<br><br>
-                After transfer, submit the reference above or WhatsApp <a href="https://wa.me/2349087805425">09087805425</a></p>
-            </div>
-        </div>
-    </div>
-
-    <div class="toast" id="toast"></div>
-
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) { window.location.href = 'index.html'; return; }
-            currentUser = session.user;
-            loadWallet();
+// Handle fund request form
+async function handleFundSubmit(e) {
+    e.preventDefault();
+    
+    const amount = parseFloat(document.getElementById('fundAmount')?.value);
+    const method = document.getElementById('fundMethod')?.value || 'bank';
+    const reference = document.getElementById('fundReference')?.value;
+    
+    if (!amount || amount < 1000) {
+        showToast('Minimum amount is ₦1,000', 'error');
+        return;
+    }
+    
+    try {
+        // Record transaction request
+        await supabaseClient.from('transactions').insert({
+            user_id: currentUser.id,
+            type: 'deposit',
+            amount: amount,
+            method: method,
+            reference: reference || `MANUAL-${Date.now()}`,
+            status: 'pending'
         });
+        
+        showToast('Fund request submitted! Admin will verify shortly.', 'success');
+        document.getElementById('fundForm')?.reset();
+        loadTransactions();
+        
+    } catch (err) {
+        showToast('Failed: ' + err.message, 'error');
+    }
+}
 
-        async function loadWallet() {
-            // Load profile
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('balance, points')
-                .eq('id', currentUser.id)
-                .single();
-            
-            if (profile) {
-                document.getElementById('userBalance').textContent = (profile.balance || 0).toFixed(2);
-                document.getElementById('userPoints').textContent = profile.points || 0;
-            }
-            
-            // Load transactions
-            await loadTransactions();
-        }
+// Open Korapay payment
+function openKorapayPayment() {
+    const amount = document.getElementById('fundAmount')?.value;
+    
+    if (!amount || amount < 1000) {
+        showToast('Enter amount (minimum ₦1,000)', 'error');
+        return;
+    }
+    
+    // Store pending transaction
+    localStorage.setItem('pendingPayment', JSON.stringify({
+        amount: amount,
+        timestamp: Date.now(),
+        userId: currentUser.id
+    }));
+    
+    // Open Korapay in new window
+    window.open(KORAPAY_LINK, '_blank');
+    
+    showToast('Complete payment on Korapay. Your balance will update automatically.', 'success');
+    
+    // Check for payment completion after 10 seconds
+    setTimeout(checkPaymentStatus, 10000);
+}
 
-        async function loadTransactions() {
-            const { data: txs } = await supabase
-                .from('transactions')
-                .select('*')
-                .eq('user_id', currentUser.id)
-                .order('created_at', { ascending: false })
-                .limit(20);
-            
-            const container = document.getElementById('transactionsList');
-            if (!txs?.length) {
-                container.innerHTML = '<p class="empty-state">No transactions yet</p>';
-                return;
-            }
-            
-            container.innerHTML = txs.map(tx => `
-                <div class="transaction-item">
-                    <div class="tx-info">
-                        <strong>${tx.type.toUpperCase()}</strong>
-                        <small>${new Date(tx.created_at).toLocaleDateString()}</small>
-                    </div>
-                    <div class="tx-amount ${tx.type === 'purchase' || tx.type === 'withdrawal' ? 'negative' : 'positive'}">
-                        ${tx.type === 'purchase' || tx.type === 'withdrawal' ? '-' : '+'}₦${tx.amount.toLocaleString()}
-                    </div>
-                    <span class="tx-status ${tx.status}">${tx.status}</span>
-                </div>
-            `).join('');
-        }
+async function checkPaymentStatus() {
+    // Reload wallet to check for new balance
+    await loadWallet();
+    showToast('Wallet refreshed. Check if your balance updated.', 'success');
+}
 
-        async function handleFundSubmit(e) {
-            e.preventDefault();
-            const amount = parseFloat(document.getElementById('fundAmount').value);
-            const method = document.getElementById('fundMethod').value;
-            const reference = document.getElementById('fundReference').value;
-            
-            try {
-                await supabase.from('transactions').insert({
-                    user_id: currentUser.id,
-                    type: 'deposit',
-                    amount: amount,
-                    method: method,
-                    reference: reference || `MANUAL-${Date.now()}`,
-                    status: 'pending'
-                });
-                
-                showToast('Fund request submitted! Admin will verify shortly.', 'success');
-                document.getElementById('fundForm').reset();
-                loadTransactions();
-            } catch (err) {
-                showToast('Failed: ' + err.message, 'error');
-            }
-        }
+async function redeemPoints() {
+    const points = parseInt(document.getElementById('userPoints')?.textContent || '0');
+    
+    if (points < 1) {
+        showToast('You need at least 1 point to redeem', 'error');
+        return;
+    }
+    
+    if (!confirm(`Redeem ${points} points for ₦${points * 100}?`)) return;
+    
+    try {
+        await supabaseClient.from('points_redemptions').insert({
+            user_id: currentUser.id,
+            points_used: points,
+            value_received: points * 100,
+            status: 'completed'
+        });
+        
+        const { data: profile } = await supabaseClient
+            .from('profiles')
+            .select('balance')
+            .eq('id', currentUser.id)
+            .single();
+        
+        await supabaseClient
+            .from('profiles')
+            .update({ 
+                balance: (profile?.balance || 0) + (points * 100),
+                points: 0
+            })
+            .eq('id', currentUser.id);
+        
+        showToast(`Redeemed! ₦${points * 100} added to balance.`, 'success');
+        loadWallet();
+        
+    } catch (err) {
+        showToast('Failed: ' + err.message, 'error');
+    }
+}
 
-        async function redeemPoints() {
-            const points = parseInt(document.getElementById('userPoints').textContent);
-            if (points < 1) { showToast('Need at least 1 point', 'error'); return; }
-            
-            if (!confirm(`Redeem ${points} points for ₦${points * 100}?`)) return;
-            
-            try {
-                await supabase.from('points_redemptions').insert({
-                    user_id: currentUser.id,
-                    points_used: points,
-                    value_received: points * 100,
-                    status: 'completed'
-                });
-                
-                await supabase.rpc('add_user_balance', {
-                    p_user_id: currentUser.id,
-                    p_amount: points * 100,
-                    p_reason: 'Points redemption'
-                });
-                
-                showToast(`Redeemed! ₦${points * 100} added to balance.`, 'success');
-                loadWallet();
-            } catch (err) {
-                showToast('Failed: ' + err.message, 'error');
-            }
-        }
+async function logout() {
+    await supabaseClient.auth.signOut();
+    window.location.href = 'index.html';
+}
 
-        function showFundModal() {
-            document.getElementById('fundModal').classList.add('active');
-        }
-    </script>
-</body>
-</html>
+// Expose functions globally
+window.handleFundSubmit = handleFundSubmit;
+window.openKorapayPayment = openKorapayPayment;
+window.redeemPoints = redeemPoints;
+window.logout = logout;
