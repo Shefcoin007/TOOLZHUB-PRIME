@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketplace | ToolzHub-Prime</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo" onclick="window.location.href='index.html'">
+                <img src="/logo-192.png" alt="ToolzHub" class="logo-img">
+                <div class="logo-text">
+                    <span class="logo-main">TOOLZ<span class="highlight">HUB</span></span>
+                    <span class="logo-sub">PRIME</span>
+                </div>
+            </div>
+            <div class="nav-menu">
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="marketplace.html" class="nav-link active">Marketplace</a>
+                <a href="wallet.html" class="nav-link">Wallet</a>
+                <a href="support.html" class="nav-link">Support</a>
+            </div>
+            <div class="nav-actions">
+                <button class="btn-cart" onclick="toggleCart()">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count" id="cartCount">0</span>
+                </button>
+                <button class="btn-primary" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="page">
+        <div class="container">
+            <div class="page-header">
+                <h1>Marketplace</h1>
+                <p>Browse and purchase premium digital assets</p>
+            </div>
+
+            <div class="filters">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Search products..." oninput="searchProducts()">
+                </div>
+                <div class="category-tabs">
+                    <button class="tab-btn active" onclick="filterProducts('all')">All</button>
+                    <button class="tab-btn" onclick="filterProducts('proxy')">Proxies</button>
+                    <button class="tab-btn" onclick="filterProducts('logs')">Logs</button>
+                    <button class="tab-btn" onclick="filterProducts('blueprint')">Blueprints</button>
+                    <button class="tab-btn" onclick="filterProducts('update')">Updates</button>
+                </div>
+            </div>
+
+            <div class="products-grid" id="productsGrid">
+                <div class="loading">Loading products...</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Cart Modal (same as index.html) -->
+    <div class="modal" id="cartModal">
+        <div class="modal-content modal-large">
+            <button class="modal-close" onclick="toggleCart()">&times;</button>
+            <h3>Shopping Cart</h3>
+            <div id="cartItems"></div>
+            <div id="cartFooter" style="display:none;">
+                <div class="cart-total">Total: <span class="currency">₦</span><span id="cartTotal">0</span></div>
+                <button class="btn-checkout" onclick="checkout()">
+                    <i class="fas fa-credit-card"></i> Checkout
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <script>
+        // Page-specific init
+        document.addEventListener('DOMContentLoaded', async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                window.location.href = 'index.html';
+                return;
+            }
+            currentUser = session.user;
+            updateAuthUI(true);
+            loadProducts(); // From app.js
+        });
+    </script>
+</body>
+</html>
