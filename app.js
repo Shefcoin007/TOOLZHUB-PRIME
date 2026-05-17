@@ -50,23 +50,24 @@ async function checkAuth() {
         console.error('Auth error:', err);
     }
 }
-
-async function handleLogin(e) {
-    e.preventDefault();
-    const email = document.getElementById('loginEmail')?.value;
-    const password = document.getElementById('loginPassword')?.value;
-    
+async function signInWithGoogle() {
     try {
-        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        const { error } = await supabaseClient.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                // ✅ Use the correct GitHub Pages URL
+                redirectTo: window.location.origin.includes('github.io') 
+                    ? `${window.location.origin}/TOOLZHUB-PRIME/dashboard.html`
+                    : `${window.location.origin}/dashboard.html`,
+                queryParams: { 
+                    access_type: 'offline', 
+                    prompt: 'consent' 
+                }
+            }
+        });
         if (error) throw error;
-        
-        currentUser = data.user;
-        updateAuthUI(true);
-        toggleAuthModal();
-        showToast('Welcome back!', 'success');
-        setTimeout(() => window.location.href = 'dashboard.html', 800);
     } catch (err) {
-        showToast('Login failed: ' + err.message, 'error');
+        showToast('Google sign-in failed: ' + err.message, 'error');
     }
 }
 
