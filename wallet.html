@@ -1,187 +1,177 @@
-// Korapay Payment Link
-const KORAPAY_LINK = 'https://test-checkout.korapay.com/pay/QKaF9T6aabNMaKF';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallet | ToolzHub-Prime</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+</head>
+<body>
+    <div class="animated-bg">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+    </div>
 
-document.addEventListener('DOMContentLoaded', async () => {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    
-    if (!session) {
-        window.location.href = 'index.html';
-        return;
-    }
-    
-    currentUser = session.user;
-    await loadWallet();
-});
-
-async function loadWallet() {
-    try {
-        // Load profile
-        const { data: profile } = await supabaseClient
-            .from('profiles')
-            .select('balance, points')
-            .eq('id', currentUser.id)
-            .single();
-        
-        if (profile) {
-            document.getElementById('userBalance').textContent = (profile.balance || 0).toFixed(2);
-            document.getElementById('userPoints').textContent = profile.points || 0;
-        }
-        
-        // Load transactions
-        await loadTransactions();
-        
-    } catch (err) {
-        console.error('Wallet load error:', err);
-    }
-}
-
-async function loadTransactions() {
-    try {
-        const { data: txs } = await supabaseClient
-            .from('transactions')
-            .select('*')
-            .eq('user_id', currentUser.id)
-            .order('created_at', { ascending: false })
-            .limit(20);
-        
-        const container = document.getElementById('transactionsList');
-        if (!container) return;
-        
-        if (!txs || txs.length === 0) {
-            container.innerHTML = '<p class="empty-state">No transactions yet</p>';
-            return;
-        }
-        
-        container.innerHTML = txs.map(tx => `
-            <div class="transaction-item">
-                <div class="tx-info">
-                    <strong>${tx.type.toUpperCase()}</strong>
-                    <small>${new Date(tx.created_at).toLocaleString()}</small>
-                    ${tx.method ? `<span class="tx-method">${tx.method}</span>` : ''}
+    <nav class="navbar glass-effect">
+        <div class="nav-container">
+            <div class="logo" onclick="window.location.href='index.html'">
+                <img src="icon-192.png" alt="ToolzHub" class="logo-img">
+                <div class="logo-text">
+                    <span class="logo-main">TOOLZ<span class="highlight">HUB</span></span>
+                    <span class="logo-sub">PRIME</span>
                 </div>
-                <div class="tx-amount ${tx.type === 'purchase' || tx.type === 'withdrawal' ? 'negative' : 'positive'}">
-                    ${tx.type === 'purchase' || tx.type === 'withdrawal' ? '-' : '+'}₦${tx.amount.toLocaleString()}
-                </div>
-                <span class="tx-status ${tx.status}">${tx.status}</span>
             </div>
-        `).join('');
-        
-    } catch (err) {
-        console.error('Error loading transactions:', err);
-    }
-}
+            
+            <div class="nav-menu">
+                <a href="dashboard.html" class="nav-link"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="marketplace.html" class="nav-link"><i class="fas fa-store"></i> Marketplace</a>
+                <a href="wallet.html" class="nav-link active"><i class="fas fa-wallet"></i> Wallet</a>
+                <a href="support.html" class="nav-link"><i class="fas fa-headset"></i> Support</a>
+            </div>
 
-// Handle fund request form
-async function handleFundSubmit(e) {
-    e.preventDefault();
-    
-    const amount = parseFloat(document.getElementById('fundAmount')?.value);
-    const method = document.getElementById('fundMethod')?.value || 'bank';
-    const reference = document.getElementById('fundReference')?.value;
-    
-    if (!amount || amount < 1000) {
-        showToast('Minimum amount is ₦1,000', 'error');
-        return;
-    }
-    
-    try {
-        // Record transaction request
-        await supabaseClient.from('transactions').insert({
-            user_id: currentUser.id,
-            type: 'deposit',
-            amount: amount,
-            method: method,
-            reference: reference || `MANUAL-${Date.now()}`,
-            status: 'pending'
-        });
-        
-        showToast('Fund request submitted! Admin will verify shortly.', 'success');
-        document.getElementById('fundForm')?.reset();
-        loadTransactions();
-        
-    } catch (err) {
-        showToast('Failed: ' + err.message, 'error');
-    }
-}
+            <div class="nav-actions">
+                <div class="user-menu">
+                    <div class="user-avatar" onclick="window.location.href='dashboard.html'">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
 
-// Open Korapay payment
-function openKorapayPayment() {
-    const amount = document.getElementById('fundAmount')?.value;
-    
-    if (!amount || amount < 1000) {
-        showToast('Enter amount (minimum ₦1,000)', 'error');
-        return;
-    }
-    
-    // Store pending transaction
-    localStorage.setItem('pendingPayment', JSON.stringify({
-        amount: amount,
-        timestamp: Date.now(),
-        userId: currentUser.id
-    }));
-    
-    // Open Korapay in new window
-    window.open(KORAPAY_LINK, '_blank');
-    
-    showToast('Complete payment on Korapay. Your balance will update automatically.', 'success');
-    
-    // Check for payment completion after 10 seconds
-    setTimeout(checkPaymentStatus, 10000);
-}
+    <main class="wallet-page">
+        <div class="container">
+            <!-- Page Header -->
+            <div class="page-header" data-aos="fade-down">
+                <h1>My Wallet</h1>
+                <p class="text-muted">Manage your balance and transactions</p>
+            </div>
 
-async function checkPaymentStatus() {
-    // Reload wallet to check for new balance
-    await loadWallet();
-    showToast('Wallet refreshed. Check if your balance updated.', 'success');
-}
+            <!-- Balance Card -->
+            <div class="balance-card-main" data-aos="fade-up">
+                <div class="balance-content">
+                    <div class="balance-header">
+                        <span class="balance-label">Available Balance</span>
+                        <button class="icon-btn" onclick="loadWallet()" title="Refresh">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    <div class="balance-amount">
+                        <span class="currency">₦</span>
+                        <span id="userBalance" class="amount animate-count">0.00</span>
+                    </div>
+                    <div class="balance-points">
+                        <i class="fas fa-gift"></i>
+                        <span id="userPoints" class="animate-count">0</span> Points
+                        <span class="points-info">(1 point = ₦100)</span>
+                    </div>
+                    <div class="balance-buttons">
+                        <button class="btn-primary" onclick="document.getElementById('fundSection').scrollIntoView({behavior: 'smooth'})">
+                            <i class="fas fa-plus"></i> Add Funds
+                        </button>
+                        <button class="btn-secondary" onclick="redeemPoints()">
+                            <i class="fas fa-exchange-alt"></i> Redeem Points
+                        </button>
+                    </div>
+                </div>
+                <div class="balance-visual">
+                    <div class="coin-animation">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                </div>
+            </div>
 
-async function redeemPoints() {
-    const points = parseInt(document.getElementById('userPoints')?.textContent || '0');
-    
-    if (points < 1) {
-        showToast('You need at least 1 point to redeem', 'error');
-        return;
-    }
-    
-    if (!confirm(`Redeem ${points} points for ₦${points * 100}?`)) return;
-    
-    try {
-        await supabaseClient.from('points_redemptions').insert({
-            user_id: currentUser.id,
-            points_used: points,
-            value_received: points * 100,
-            status: 'completed'
-        });
-        
-        const { data: profile } = await supabaseClient
-            .from('profiles')
-            .select('balance')
-            .eq('id', currentUser.id)
-            .single();
-        
-        await supabaseClient
-            .from('profiles')
-            .update({ 
-                balance: (profile?.balance || 0) + (points * 100),
-                points: 0
-            })
-            .eq('id', currentUser.id);
-        
-        showToast(`Redeemed! ₦${points * 100} added to balance.`, 'success');
-        loadWallet();
-        
-    } catch (err) {
-        showToast('Failed: ' + err.message, 'error');
-    }
-}
+            <!-- Quick Fund Options -->
+            <div class="fund-options" data-aos="fade-up" data-aos-delay="100">
+                <h3 style="margin-bottom: 20px;">Add Funds</h3>
+                
+                <!-- Korapay Quick Pay Card -->
+                <div class="payment-card korapay-card" data-aos="fade-right">
+                    <div class="payment-header">
+                        <div class="payment-icon korapay">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+                        <div>
+                            <h4>Korapay</h4>
+                            <p class="text-muted">Fast & secure payment</p>
+                        </div>
+                        <span class="payment-badge">Recommended</span>
+                    </div>
+                    <div class="payment-body">
+                        <div class="amount-input-group">
+                            <span class="currency-symbol">₦</span>
+                            <input type="number" id="korapayAmount" placeholder="Enter amount" min="1000" step="100">
+                        </div>
+                        <button class="btn-primary btn-block" onclick="openKorapayPayment()">
+                            <i class="fas fa-external-link-alt"></i> Pay with Korapay
+                        </button>
+                        <p class="payment-note">
+                            <i class="fas fa-shield-alt"></i> Payments are secured and verified automatically
+                        </p>
+                    </div>
+                </div>
 
-async function logout() {
-    await supabaseClient.auth.signOut();
-    window.location.href = 'index.html';
-}
+                <!-- Manual Transfer Card -->
+                <div class="payment-card" data-aos="fade-left">
+                    <div class="payment-header">
+                        <div class="payment-icon bank">
+                            <i class="fas fa-university"></i>
+                        </div>
+                        <div>
+                            <h4>Bank Transfer</h4>
+                            <p class="text-muted">Manual verification</p>
+                        </div>
+                    </div>
+                    <div class="payment-body">
+                        <div class="bank-details">
+                            <p><strong>Account Name:</strong> ToolzHub-Prime</p>
+                            <p><strong>Account Number:</strong> [Your Account]</p>
+                            <p><strong>Bank:</strong> [Your Bank]</p>
+                        </div>
+                        <form id="fundForm" onsubmit="handleFundSubmit(event)">
+                            <div class="form-group">
+                                <input type="number" id="fundAmount" placeholder="Amount (₦)" min="1000" step="100" required>
+                            </div>
+                            <div class="form-group">
+                                <input type="text" id="fundReference" placeholder="Transaction Reference">
+                            </div>
+                            <button type="submit" class="btn-secondary btn-block">
+                                <i class="fas fa-paper-plane"></i> Submit for Verification
+                            </button>
+                        </form>
+                        <p class="payment-note">
+                            <i class="fas fa-clock"></i> Contact <a href="https://wa.me/2349087805425">WhatsApp</a> for instant confirmation
+                        </p>
+                    </div>
+                </div>
+            </div>
 
-// Expose functions globally
-window.handleFundSubmit = handleFundSubmit;
-window.openKorapayPayment = openKorapayPayment;
-window.redeemPoints = redeemPoints;
-window.logout = logout;
+            <!-- Transaction History -->
+            <div class="section" data-aos="fade-up" data-aos-delay="200">
+                <div class="section-header">
+                    <h2>Transaction History</h2>
+                    <button class="btn-text" onclick="loadTransactions()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                <div id="transactionsList" class="transactions-list">
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                        <p>Loading transactions...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="app.js"></script>
+    <script src="wallet.js"></script>
+</body>
+</html>
