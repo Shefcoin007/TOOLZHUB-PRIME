@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support | ToolzHub-Prime</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo" onclick="window.location.href='index.html'">
+                <img src="/logo-192.png" alt="ToolzHub" class="logo-img">
+                <div class="logo-text">
+                    <span class="logo-main">TOOLZ<span class="highlight">HUB</span></span>
+                    <span class="logo-sub">PRIME</span>
+                </div>
+            </div>
+            <div class="nav-menu">
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="marketplace.html" class="nav-link">Marketplace</a>
+                <a href="wallet.html" class="nav-link">Wallet</a>
+                <a href="support.html" class="nav-link active">Support</a>
+            </div>
+            <div class="nav-actions">
+                <button class="btn-primary" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="page">
+        <div class="container">
+            <div class="page-header">
+                <h1>Support Center</h1>
+                <p>Get help with orders, payments, or technical issues</p>
+            </div>
+
+            <!-- Quick Contact -->
+            <div class="quick-contact">
+                <a href="https://wa.me/2349087805425" class="contact-card whatsapp" target="_blank">
+                    <i class="fab fa-whatsapp"></i>
+                    <div>
+                        <strong>WhatsApp Support</strong>
+                        <p>09087805425 • Instant response</p>
+                    </div>
+                </a>
+                <a href="mailto:walijimoh007@gmail.com" class="contact-card email">
+                    <i class="fas fa-envelope"></i>
+                    <div>
+                        <strong>Email Support</strong>
+                        <p>walijimoh007@gmail.com • 24h response</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Create Ticket -->
+            <div class="section">
+                <h3>Create a Ticket</h3>
+                <form id="ticketForm" onsubmit="createTicket(event)" class="ticket-form">
+                    <div class="form-group">
+                        <label>Subject</label>
+                        <input type="text" id="ticketSubject" required placeholder="Brief description of your issue">
+                    </div>
+                    <div class="form-group">
+                        <label>Priority</label>
+                        <select id="ticketPriority">
+                            <option value="low">Low - General question</option>
+                            <option value="medium" selected>Medium - Order/Payment issue</option>
+                            <option value="high">High - Account access problem</option>
+                            <option value="urgent">Urgent - Service not working</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Message</label>
+                        <textarea id="ticketMessage" rows="5" required placeholder="Describe your issue in detail..."></textarea>
+                    </div>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-paper-plane"></i> Submit Ticket
+                    </button>
+                </form>
+            </div>
+
+            <!-- My Tickets -->
+            <div class="section">
+                <h3>My Tickets</h3>
+                <div id="ticketsList" class="tickets-list">
+                    <p class="empty-state">Loading your tickets...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Ticket Detail Modal -->
+    <div class="modal" id="ticketModal">
+        <div class="modal-content modal-large">
+            <button class="modal-close" onclick="document.getElementById('ticketModal').classList.remove('active')">&times;</button>
+            <h3 id="ticketModalTitle">Ticket Details</h3>
+            <div id="ticketMessages" class="ticket-messages"></div>
+            <form id="replyForm" onsubmit="sendReply(event)" class="reply-form">
+                <textarea id="replyMessage" rows="3" placeholder="Type your reply..." required></textarea>
+                <button type="submit" class="btn-primary">Send Reply</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <script>
+        let currentTicketId = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) { window.location.href = 'index.html'; return; }
+            currentUser = session.user;
+            loadTickets();
+        });
+
+        async function createTicket(e) {
+            e.preventDefault();
+            const subject = document.getElementById('ticketSubject').value;
+            const priority = document.getElementById('ticketPriority').value;
+            const message = document.getElementById('ticketMessage').value;
+            
+            try {
+                const { data, error } = await supabase.from('tickets').insert({
+                    user_id: currentUser.id,
+                    subject,
+                    message,
+                    priority,
+                    status: 'open'
+                }).select().single();
+                
+                if (error) throw error;
+                
+                showToast('Ticket created! We\'ll respond soon.', 'success');
+                document.getElementById('ticketForm').reset();
+                loadTickets();
+            } catch (err) {
+                showToast('Failed: ' + err.message, 'error');
+            }
+        }
+
+        async function loadTickets() {
+            const { data: tickets } = await supabase
+                .from('tickets')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .order('created_at', { ascending: false });
+            
+            const container = document.getElementById('ticketsList');
+            if (!tickets?.length) {
+                container.innerHTML = '<p class="empty-state">No tickets yet</p>';
+                return;
+            }
+            
+            container.innerHTML = tickets.map(t => `
+                <div class="ticket-item" onclick="openTicket('${t.id}')">
+                    <div class="ticket-header">
+                        <strong>${t.subject}</strong>
+                        <span class="priority-badge ${t.priority}">${t.priority}</span>
+                    </div>
+                    <p class="ticket-preview">${t.message.substring(0, 100)}${t.message.length > 100 ? '...' : ''}</p>
+                    <div class="ticket-meta">
+                        <span class="status-badge ${t.status}">${t.status}</span>
+                        <small>${new Date(t.created_at).toLocaleDateString()}</small>
+                        ${t.admin_response ? '<span class="has-reply">✓ Admin replied</span>' : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function openTicket(ticketId) {
+            currentTicketId = ticketId;
+            
+            // Load ticket details
+            const { data: ticket } = await supabase
+                .from('tickets')
+                .select('*')
+                .eq('id', ticketId)
+                .single();
+            
+            document.getElementById('ticketModalTitle').textContent = ticket.subject;
+            
+            // Load messages
+            await loadTicketMessages(ticketId);
+            
+            document.getElementById('ticketModal').classList.add('active');
+        }
+
+        async function loadTicketMessages(ticketId) {
+            // Initial message
+            const { data: ticket } = await supabase
+                .from('tickets')
+                .select('message, created_at')
+                .eq('id', ticketId)
+                .single();
+            
+            // Replies
+            const { data: replies } = await supabase
+                .from('ticket_messages')
+                .select('*')
+                .eq('ticket_id', ticketId)
+                .order('created_at', { ascending: true });
+            
+            const container = document.getElementById('ticketMessages');
+            let html = `<div class="message user"><strong>You</strong><small>${new Date(ticket.created_at).toLocaleString()}</small><p>${ticket.message}</p></div>`;
+            
+            if (replies?.length) {
+                replies.forEach(msg => {
+                    const cls = msg.is_admin ? 'admin' : 'user';
+                    const name = msg.is_admin ? 'Support' : 'You';
+                    html += `<div class="message ${cls}"><strong>${name}</strong><small>${new Date(msg.created_at).toLocaleString()}</small><p>${msg.message}</p></div>`;
+                });
+            }
+            
+            if (ticket.admin_response) {
+                html += `<div class="message admin"><strong>Support</strong><small>${new Date(ticket.updated_at).toLocaleString()}</small><p>${ticket.admin_response}</p></div>`;
+            }
+            
+            container.innerHTML = html;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function sendReply(e) {
+            e.preventDefault();
+            const message = document.getElementById('replyMessage').value;
+            
+            try {
+                await supabase.from('ticket_messages').insert({
+                    ticket_id: currentTicketId,
+                    sender_id: currentUser.id,
+                    message,
+                    is_admin: false
+                });
+                
+                // Update ticket status
+                await supabase.from('tickets')
+                    .update({ status: 'pending', updated_at: new Date() })
+                    .eq('id', currentTicketId);
+                
+                showToast('Reply sent!', 'success');
+                document.getElementById('replyMessage').value = '';
+                loadTicketMessages(currentTicketId);
+                loadTickets(); // Refresh list
+            } catch (err) {
+                showToast('Failed: ' + err.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
