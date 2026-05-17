@@ -6,6 +6,8 @@
     <title>Marketplace | ToolzHub-Prime</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
 </head>
 <body>
     <div class="animated-bg">
@@ -35,22 +37,24 @@
                     <i class="fas fa-shopping-cart"></i>
                     <span class="cart-count" id="cartCount">0</span>
                 </button>
-                <button class="btn-primary" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </button>
+                <div class="user-menu">
+                    <div class="user-avatar" onclick="window.location.href='dashboard.html'">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </nav>
 
     <main class="marketplace-page">
         <div class="container">
-            <!-- Header -->
+            <!-- Page Header -->
             <div class="page-header" data-aos="fade-down">
                 <h1>Marketplace</h1>
-                <p>Browse our premium digital assets</p>
+                <p class="text-muted">Browse our premium digital assets</p>
             </div>
 
-            <!-- Search & Filter -->
+            <!-- Search & Filters -->
             <div class="marketplace-controls" data-aos="fade-up">
                 <div class="search-box">
                     <i class="fas fa-search"></i>
@@ -90,11 +94,14 @@
                 <i class="fas fa-box-open"></i>
                 <h3>No products found</h3>
                 <p>Try adjusting your search or filters</p>
+                <button class="btn-secondary" onclick="filterByCategory('all')">
+                    <i class="fas fa-sync-alt"></i> Reset Filters
+                </button>
             </div>
         </div>
     </main>
 
-    <!-- Cart Modal -->
+    <!-- Cart Slide-over Modal -->
     <div class="modal modal-side" id="cartModal">
         <div class="modal-content-side">
             <div class="modal-header">
@@ -105,6 +112,9 @@
                 <div class="empty-cart">
                     <i class="fas fa-shopping-cart"></i>
                     <p>Your cart is empty</p>
+                    <a href="#products" class="btn-secondary" onclick="toggleCart()">
+                        <i class="fas fa-arrow-left"></i> Continue Shopping
+                    </a>
                 </div>
             </div>
             <div id="cartFooter" class="cart-footer-modern" style="display: none;">
@@ -113,11 +123,13 @@
                     <span class="total-amount">₦<span id="cartTotal">0</span></span>
                 </div>
                 <button class="btn-checkout" onclick="checkout()">
-                    <i class="fas fa-credit-card"></i> Checkout
+                    <i class="fas fa-credit-card"></i> Proceed to Checkout
                 </button>
             </div>
         </div>
     </div>
+
+    <div class="toast-container" id="toastContainer"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
