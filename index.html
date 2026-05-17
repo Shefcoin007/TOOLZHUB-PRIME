@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="description" content="ToolzHub-Prime - Legitimate sales of Logs, Accounts and Social Media Platforms">
+    <title>ToolzHub-Prime | Premium Digital Marketplace</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <svg viewBox="0 0 100 100" width="40" height="40">
+                            <polygon points="50,5 90,25 90,75 50,95 10,75 10,25" fill="#6366f1" stroke="#818cf8" stroke-width="2"/>
+                            <text x="50" y="65" text-anchor="middle" fill="white" font-size="40" font-weight="bold">T</text>
+                        </svg>
+                    </div>
+                    <span class="logo-text">TOOLZ<span class="highlight">HUB</span>-PRIME</span>
+                </div>
+            </div>
+            
+            <div class="nav-menu" id="navMenu">
+                <a href="#home" class="nav-link active">Home</a>
+                <a href="#products" class="nav-link">Products</a>
+                <a href="#banking" class="nav-link">Banking</a>
+                <a href="#dashboard" class="nav-link">Dashboard</a>
+                <a href="#funding" class="nav-link">Fund Wallet</a>
+                <a href="#contact" class="nav-link">Support</a>
+            </div>
+
+            <div class="nav-actions">
+                <!-- Currency Selector -->
+                <div class="currency-selector">
+                    <select id="currencySelect" onchange="changeCurrency()">
+                        <option value="NGN">₦ NGN</option>
+                        <option value="USD">$ USD</option>
+                        <option value="EUR">€ EUR</option>
+                        <option value="GBP">£ GBP</option>
+                    </select>
+                </div>
+                
+                <button class="btn-icon" id="themeToggle" onclick="toggleTheme()">
+                    <i class="fas fa-moon"></i>
+                </button>
+                
+                <div id="authButtons">
+                    <button class="btn-primary" onclick="showModal('loginModal')">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                </div>
+                
+                <button class="btn-cart" id="cartBtn" onclick="showModal('cartModal')" style="display:none;">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count" id="cartCount">0</span>
+                </button>
+            </div>
+
+            <button class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileMenu()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="hero-bg">
+            <div class="gradient-orb orb-1"></div>
+            <div class="gradient-orb orb-2"></div>
+            <div class="gradient-orb orb-3"></div>
+        </div>
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Legitimate & Verified Marketplace</span>
+                </div>
+                <h1 class="hero-title">
+                    Premium <span class="gradient-text">Logs</span>, 
+                    <span class="gradient-text">Accounts</span> & 
+                    <span class="gradient-text">Social Media</span> Platforms
+                </h1>
+                <p class="hero-subtitle">
+                    Trusted by thousands of professionals worldwide. Secure, fast, and reliable digital assets for your business needs.
+                </p>
+                <div class="hero-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-users"></i></div>
+                        <div class="stat-value">10,000+</div>
+                        <div class="stat-label">Active Users</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-box-open"></i></div>
+                        <div class="stat-value">50,000+</div>
+                        <div class="stat-label">Products Sold</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                        <div class="stat-value">24/7</div>
+                        <div class="stat-label">Support</div>
+                    </div>
+                </div>
+                <div class="hero-actions">
+                    <button class="btn-hero-primary" onclick="scrollToSection('products')">
+                        <i class="fas fa-rocket"></i> Browse Products
+                    </button>
+                    <button class="btn-hero-secondary" onclick="showModal('loginModal'); scrollToSection('funding')">
+                        <i class="fas fa-wallet"></i> Fund Wallet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Products Section -->
+    <section class="products-section" id="products">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Our Products</h2>
+                <p class="section-subtitle">Premium quality digital assets at competitive prices</p>
+            </div>
+
+            <div class="products-filter">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Search products..." onkeyup="searchProducts()">
+                </div>
+                <div class="category-filter">
+                    <button class="filter-btn active" onclick="filterCategory('all')">All</button>
+                    <button class="filter-btn" onclick="filterCategory('proxy')">Proxies</button>
+                    <button class="filter-btn" onclick="filterCategory('facebook')">Facebook</button>
+                    <button class="filter-btn" onclick="filterCategory('instagram')">Instagram</button>
+                    <button class="filter-btn" onclick="filterCategory('logs')">Logs</button>
+                    <button class="filter-btn" onclick="filterCategory('tools')">Tools</button>
+                </div>
+            </div>
+
+            <div class="products-grid" id="productsGrid">
+                <!-- Products loaded dynamically -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Banking Dashboard -->
+    <section class="banking-section" id="banking">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Banking Dashboard</h2>
+                <p class="section-subtitle">Manage your wallet and transactions</p>
+            </div>
+            
+            <div class="banking-grid" id="bankingSection" style="display:none;">
+                <div class="bank-card main-card">
+                    <div class="bank-card-header">
+                        <span class="bank-label">Total Balance</span>
+                        <button class="btn-refresh" onclick="refreshBalance()"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                    <div class="bank-balance">
+                        <span class="currency" id="balanceCurrency">₦</span>
+                        <span class="amount" id="totalBalance">0.00</span>
+                    </div>
+                    <div class="bank-account">
+                        <span class="account-number" id="userEmail">user@example.com</span>
+                        <span class="account-type">Premium Account</span>
+                    </div>
+                    <div class="bank-actions">
+                        <button class="bank-btn" onclick="showModal('fundModal')">
+                            <i class="fas fa-plus"></i> Fund Wallet
+                        </button>
+                        <button class="bank-btn secondary" onclick="showWithdrawModal()">
+                            <i class="fas fa-arrow-up"></i> Withdraw
+                        </button>
+                        <button class="bank-btn secondary" onclick="showTransferModal()">
+                            <i class="fas fa-exchange-alt"></i> Transfer
+                        </button>
+                    </div>
+                </div>
+
+                <div class="banking-stats">
+                    <div class="mini-card">
+                        <div class="mini-icon green"><i class="fas fa-arrow-down"></i></div>
+                        <div class="mini-info">
+                            <span class="mini-label">Total Deposits</span>
+                            <span class="mini-value"><span class="currency-symbol">₦</span><span id="totalDeposits">0</span></span>
+                        </div>
+                    </div>
+                    <div class="mini-card">
+                        <div class="mini-icon red"><i class="fas fa-arrow-up"></i></div>
+                        <div class="mini-info">
+                            <span class="mini-label">Total Spent</span>
+                            <span class="mini-value"><span class="currency-symbol">₦</span><span id="totalSpent">0</span></span>
+                        </div>
+                    </div>
+                    <div class="mini-card">
+                        <div class="mini-icon blue"><i class="fas fa-gift"></i></div>
+                        <div class="mini-info">
+                            <span class="mini-label">Bonuses</span>
+                            <span class="mini-value"><span class="currency-symbol">₦</span><span id="totalBonuses">0</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="auth-prompt" id="authPrompt">
+                <i class="fas fa-lock"></i>
+                <h3>Login to View Banking</h3>
+                <p>Please login or create an account to access your banking dashboard</p>
+                <button class="btn-primary" onclick="showModal('loginModal')">
+                    <i class="fas fa-sign-in-alt"></i> Login Now
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Funding Section -->
+    <section class="funding-section" id="funding">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Fund Your Wallet</h2>
+                <p class="section-subtitle">Quick and secure payment methods</p>
+            </div>
+
+            <div class="funding-grid">
+                <div class="funding-card">
+                    <div class="funding-icon">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                    <h3>Card Payment</h3>
+                    <p>Pay with any local or international card</p>
+                    <ul class="funding-features">
+                        <li><i class="fas fa-check"></i> Instant credit</li>
+                        <li><i class="fas fa-check"></i> Secure payment</li>
+                        <li><i class="fas fa-check"></i> 1.5% charge</li>
+                    </ul>
+                    <button class="btn-funding" onclick="selectPayment('card')">
+                        Pay with Card
+                    </button>
+                </div>
+
+                <div class="funding-card featured">
+                    <div class="badge-popular">Most Popular</div>
+                    <div class="funding-icon">
+                        <i class="fas fa-university"></i>
+                    </div>
+                    <h3>Bank Transfer</h3>
+                    <p>Direct bank transfer to our account</p>
+                    <ul class="funding-features">
+                        <li><i class="fas fa-check"></i> No charges</li>
+                        <li><i class="fas fa-check"></i> All banks accepted</li>
+                        <li><i class="fas fa-check"></i> Auto confirmation</li>
+                    </ul>
+                    <button class="btn-funding primary" onclick="selectPayment('bank')">
+                        Bank Transfer
+                    </button>
+                </div>
+
+                <div class="funding-card">
+                    <div class="funding-icon">
+                        <i class="fab fa-bitcoin"></i>
+                    </div>
+                    <h3>Cryptocurrency</h3>
+                    <p>Pay with Bitcoin, USDT, or other crypto</p>
+                    <ul class="funding-features">
+                        <li><i class="fas fa-check"></i> Low fees</li>
+                        <li><i class="fas fa-check"></i> Anonymous</li>
+                        <li><i class="fas fa-check"></i> Global access</li>
+                    </ul>
+                    <button class="btn-funding" onclick="selectPayment('crypto')">
+                        Pay with Crypto
+                    </button>
+                </div>
+            </div>
+
+            <div class="support-info">
+                <div class="support-card">
+                    <i class="fab fa-whatsapp"></i>
+                    <div>
+                        <h4>WhatsApp Support</h4>
+                        <p>09087805425</p>
+                    </div>
+                </div>
+                <div class="support-card">
+                    <i class="fas fa-envelope"></i>
+                    <div>
+                        <h4>Email Support</h4>
+                        <p>walijimoh007@gmail.com</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dashboard Section -->
+    <section class="dashboard-section" id="dashboard">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">My Dashboard</h2>
+                <p class="section-subtitle">Track your orders and activities</p>
+            </div>
+
+            <div class="dashboard-grid" id="dashboardSection" style="display:none;">
+                <div class="dashboard-card orders-card">
+                    <div class="card-header">
+                        <h3>Recent Orders</h3>
+                        <button class="btn-view-all">View All</button>
+                    </div>
+                    <div class="orders-list" id="ordersList">
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <p>No orders yet</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-card stats-card">
+                    <div class="card-header">
+                        <h3>Statistics</h3>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <span class="stat-label">Total Orders</span>
+                            <span class="stat-number" id="totalOrders">0</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">Completed</span>
+                            <span class="stat-number success" id="completedOrders">0</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">Processing</span>
+                            <span class="stat-number warning" id="processingOrders">0</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">Revenue</span>
+                            <span class="stat-number" id="revenue">₦0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="auth-prompt" id="dashboardPrompt">
+                <i class="fas fa-chart-line"></i>
+                <h3>Login to View Dashboard</h3>
+                <p>Access your order history and statistics</p>
+                <button class="btn-primary" onclick="showModal('loginModal')">
+                    <i class="fas fa-sign-in-alt"></i> Login Now
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact-section" id="contact">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Get Support</h2>
+                <p class="section-subtitle">We're here to help you 24/7</p>
+            </div>
+
+            <div class="contact-grid">
+                <div class="contact-info">
+                    <div class="contact-card">
+                        <div class="contact-icon whatsapp">
+                            <i class="fab fa-whatsapp"></i>
+                        </div>
+                        <h4>WhatsApp Support</h4>
+                        <p>09087805425</p>
+                        <button class="btn-contact" onclick="openWhatsApp()">
+                            <i class="fab fa-whatsapp"></i> Chat Now
+                        </button>
+                    </div>
+
+                    <div class="contact-card">
+                        <div class="contact-icon email">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <h4>Email Support</h4>
+                        <p>walijimoh007@gmail.com</p>
+                        <button class="btn-contact" onclick="openEmail()">
+                            <i class="fas fa-envelope"></i> Send Email
+                        </button>
+                    </div>
+
+                    <div class="contact-card">
+                        <div class="contact-icon clock">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <h4>Support Hours</h4>
+                        <p>24/7 Available</p>
+                        <span class="status-online">
+                            <i class="fas fa-circle"></i> Online Now
+                        </span>
+                    </div>
+                </div>
+
+                <div class="contact-form-wrapper">
+                    <form class="contact-form" id="contactForm" onsubmit="handleContactSubmit(event)">
+                        <div class="form-group">
+                            <label for="name">Full Name</label>
+                            <input type="text" id="name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="subject">Subject</label>
+                            <input type="text" id="subject" name="subject" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="message">Message</label>
+                            <textarea id="message" name="message" rows="5" required></textarea>
+                        </div>
+                        <button type="submit" class="btn-submit">
+                            <i class="fas fa-paper-plane"></i> Send Message
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="logo">
+                        <span class="logo-text">TOOLZ<span class="highlight">HUB</span>-PRIME</span>
+                    </div>
+                    <p>Legitimate sales of Logs, Accounts and Social Media Platforms for full Workers and Professionals.</p>
+                    <div class="social-links">
+                        <a href="#" class="social-link"><i class="fab fa-facebook"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-telegram"></i></a>
+                    </div>
+                </div>
+
+                <div class="footer-links">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#products">Products</a></li>
+                        <li><a href="#banking">Banking</a></li>
+                        <li><a href="#dashboard">Dashboard</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-links">
+                    <h4>Support</h4>
+                    <ul>
+                        <li><a href="#contact">Contact Us</a></li>
+                        <li><a href="#">FAQ</a></li>
+                        <li><a href="#">Terms of Service</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-contact">
+                    <h4>Contact Info</h4>
+                    <ul>
+                        <li><i class="fas fa-phone"></i> 09087805425</li>
+                        <li><i class="fas fa-envelope"></i> walijimoh007@gmail.com</li>
+                        <li><i class="fas fa-clock"></i> 24/7 Support</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2026 ToolzHub-Prime. All rights reserved.</p>
+                <p>Admin: walijimoh007@gmail.com | Support: 09087805425</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- WhatsApp Floating Button -->
+    <a href="https://wa.me/2349087805425" class="whatsapp-float" target="_blank" title="Chat on WhatsApp">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <!-- Modals -->
+    
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('loginModal')">&times;</button>
+            <div class="modal-header">
+                <h2>Welcome Back</h2>
+                <p>Login to access your account</p>
+            </div>
+            
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchAuthTab('login')">Login</button>
+                <button class="auth-tab" onclick="switchAuthTab('register')">Register</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" class="auth-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="loginEmail" required placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn-auth">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerForm" class="auth-form" style="display:none;" onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="registerName" required placeholder="John Doe">
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="registerEmail" required placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="registerPassword" required placeholder="Min 6 characters">
+                </div>
+                <button type="submit" class="btn-auth">
+                    <i class="fas fa-user-plus"></i> Create Account
+                </button>
+            </form>
+
+            <div class="divider">
+                <span>OR</span>
+            </div>
+
+            <!-- Google Sign In -->
+            <div id="googleSignInBtn"></div>
+        </div>
+    </div>
+
+    <!-- Cart Modal -->
+    <div class="modal" id="cartModal">
+        <div class="modal-content modal-large">
+            <button class="modal-close" onclick="closeModal('cartModal')">&times;</button>
+            <h2>Shopping Cart</h2>
+            <div class="cart-items" id="cartItems">
+                <div class="empty-cart">
+                    <i class="fas fa-shopping-cart"></i>
+                    <p>Your cart is empty</p>
+                </div>
+            </div>
+            <div class="cart-footer" id="cartFooter" style="display: none;">
+                <div class="cart-total">
+                    <span>Total:</span>
+                    <span class="total-amount"><span class="currency-symbol">₦</span><span id="cartTotal">0</span></span>
+                </div>
+                <button class="btn-checkout" onclick="checkout()">
+                    <i class="fas fa-credit-card"></i> Proceed to Checkout
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fund Modal -->
+    <div class="modal" id="fundModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('fundModal')">&times;</button>
+            <h2>Fund Wallet</h2>
+            <form id="fundForm" class="auth-form" onsubmit="handleFundSubmit(event)">
+                <div class="form-group">
+                    <label>Amount (<span class="currency-symbol">₦</span>)</label>
+                    <input type="number" id="fundAmount" min="1000" required placeholder="Enter amount">
+                </div>
+                <div class="form-group">
+                    <label>Payment Method</label>
+                    <select id="fundMethod" required>
+                        <option value="card">Card Payment</option>
+                        <option value="bank">Bank Transfer</option>
+                        <option value="crypto">Cryptocurrency</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Transaction Reference (Optional)</label>
+                    <input type="text" id="fundReference" placeholder="Payment reference">
+                </div>
+                <button type="submit" class="btn-auth">
+                    <i class="fas fa-wallet"></i> Continue
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Scripts -->
+    <script src="app.js"></script>
+</body>
+</html>
