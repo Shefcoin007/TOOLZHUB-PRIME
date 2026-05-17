@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin | ToolzHub-Prime</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .admin-only { display: none; }
+        .admin-active .admin-only { display: block; }
+        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--border); }
+        .user-row:hover { background: var(--bg-light); }
+        .balance-edit { display: flex; gap: 8px; align-items: center; }
+        .balance-edit input { width: 100px; padding: 6px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo" onclick="window.location.href='index.html'">
+                <img src="/logo-192.png" alt="ToolzHub" class="logo-img">
+                <div class="logo-text">
+                    <span class="logo-main">TOOLZ<span class="highlight">HUB</span></span>
+                    <span class="logo-sub">PRIME</span>
+                </div>
+            </div>
+            <div class="nav-actions">
+                <button class="btn-primary" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="page">
+        <div class="container">
+            <div class="page-header">
+                <h1>Admin Panel</h1>
+                <p>Manage users, balances, and products</p>
+            </div>
+
+            <!-- Admin Check -->
+            <div id="adminCheck" class="loading">Verifying admin access...</div>
+
+            <!-- Admin Content (hidden until verified) -->
+            <div id="adminContent" class="admin-only">
+                
+                <!-- User Management -->
+                <div class="section">
+                    <h3>Manage User Balances</h3>
+                    <div class="search-box" style="margin-bottom: 16px;">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="userSearch" placeholder="Search users by email..." oninput="searchUsers()">
+                    </div>
+                    <div id="usersList" class="users-list">
+                        <p>Loading users...</p>
+                    </div>
+                </div>
+
+                <!-- Product Management -->
+                <div class="section">
+                    <h3>Manage Products</h3>
+                    <button class="btn-primary" onclick="showAddProductModal()" style="margin-bottom: 16px;">
+                        <i class="fas fa-plus"></i> Add Product
+                    </button>
+                    <div id="productsList" class="products-list admin">
+                        <p>Loading products...</p>
+                    </div>
+                </div>
+
+                <!-- Pending Funds -->
+                <div class="section">
+                    <h3>Pending Fund Requests</h3>
+                    <div id="pendingFunds" class="transactions-list">
+                        <p>Loading pending requests...</p>
+                    </div>
+                </div>
+
+                <!-- Pending Tickets -->
+                <div class="section">
+                    <h3>Open Support Tickets</h3>
+                    <div id="openTickets" class="tickets-list">
+                        <p>Loading tickets...</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Product Modal -->
+    <div class="modal" id="addProductModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="document.getElementById('addProductModal').classList.remove('active')">&times;</button>
+            <h3>Add New Product</h3>
+            <form id="addProductForm" onsubmit="addProduct(event)" class="auth-form">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="prodName" required>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="prodCategory" required>
+                        <option value="proxy">Proxy</option>
+                        <option value="logs">Logs</option>
+                        <option value="blueprint">Blueprint</option>
+                        <option value="update">Update</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="prodDesc" rows="3" required></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Price (₦)</label>
+                        <input type="number" id="prodPrice" min="0" step="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Stock</label>
+                        <input type="number" id="prodStock" min="0" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-auth">Add Product</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) { window.location.href = 'index.html'; return; }
+            
+            currentUser = session.user;
+            
+            // Check if admin
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('is_admin')
+                .eq('id', currentUser.id)
+                .single();
+            
+            if (!profile?.is_admin) {
+                document.getElementById('adminCheck').innerHTML = 
+                    '<p style="color: var(--danger);">⚠️ Admin access required. Contact walijimoh007@gmail.com</p>';
+                return;
+            }
+            
+            document.getElementById('adminCheck').style.display = 'none';
+            document.body.classList.add('admin-active');
+            
+            loadAdminData();
+        });
+
+        async function loadAdminData() {
+            await loadUsers();
+            await loadAdminProducts();
+            await loadPendingFunds();
+            await loadOpenTickets();
+        }
+
+        async function loadUsers() {
+            const { data: users } = await supabase
+                .from('profiles')
+                .select('id, email, full_name, balance, points')
+                .order('created_at', { ascending: false });
+            
+            const container = document.getElementById('usersList');
+            if (!users?.length) {
+                container.innerHTML = '<p>No users found</p>';
+                return;
+            }
+            
+            container.innerHTML = users.map(u => `
+                <div class="user-row">
+                    <div>
+                        <strong>${u.full_name || 'Unknown'}</strong><br>
+                        <small>${u.email}</small>
+                    </div>
+                    <div class="balance-edit">
+                        <span>₦${(u.balance||0).toFixed(2)}</span>
+                        <input type="number" id="balance-${u.id}" placeholder="Amount" step="100">
+                        <button class="btn-primary" onclick="adjustBalance('${u.id}', 'add')">+Add</button>
+                        <button class="btn-secondary" onclick="adjustBalance('${u.id}', 'sub')">-Sub</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function adjustBalance(userId, action) {
+            const input = document.getElementById(`balance-${userId}`);
+            const amount = parseFloat(input.value);
+            if (!amount || amount <= 0) { showToast('Enter valid amount', 'error'); return; }
+            
+            try {
+                if (action === 'add') {
+                    await supabase.rpc('add_user_balance', {
+                        p_user_id: userId,
+                        p_amount: amount,
+                        p_reason: 'Admin adjustment'
+                    });
+                    showToast(`Added ₦${amount} to user`, 'success');
+                } else {
+                    // For subtraction, update directly with check
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('balance')
+                        .eq('id', userId)
+                        .single();
+                    
+                    if (profile.balance < amount) {
+                        showToast('User has insufficient balance', 'error');
+                        return;
+                    }
+                    
+                    await supabase.from('profiles')
+                        .update({ balance: profile.balance - amount })
+                        .eq('id', userId);
+                    
+                    showToast(`Subtracted ₦${amount} from user`, 'success');
+                }
+                
+                input.value = '';
+                loadUsers();
+            } catch (err) {
+                showToast('Failed: ' + err.message, 'error');
+            }
+        }
+
+        async function loadAdminProducts() {
+            const { data: prods } = await supabase
+                .from('products')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            const container = document.getElementById('productsList');
+            container.innerHTML = prods?.map(p => `
+                <div class="user-row">
+                    <div>
+                        <strong>${p.name}</strong><br>
+                        <small>${p.category} • ₦${p.price}</small>
+                    </div>
+                    <div>
+                        <button class="btn-secondary" onclick="toggleProduct('${p.id}', ${!p.is_active})">
+                            ${p.is_active ? 'Deactivate' : 'Activate'}
+                        </button>
+                    </div>
+                </div>
+            `).join('') || '<p>No products</p>';
+        }
+
+        async function toggleProduct(productId, isActive) {
+            try {
+                await supabase.from('products')
+                    .update({ is_active: isActive })
+                    .eq('id', productId);
+                showToast(`Product ${isActive ? 'activated' : 'deactivated'}`, 'success');
+                loadAdminProducts();
+            } catch (err) {
+                showToast('Failed: ' + err.message, 'error');
+            }
+        }
+
+        async function addProduct(e) {
+            e.preventDefault();
+            const name = document.getElementById('prodName').value;
+            const category = document.getElementById('prodCategory').value;
+            const description = document.getElementById('prodDesc').value;
+            const price = parseFloat(document.getElementById('prodPrice').value);
+            const stock = parseInt(document.getElementById('prodStock').value);
+            
+            try {
+                await supabase.from('products').insert({
+                    name, category, description, price, stock,
+                    slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                    is_active: true
+                });
+                showToast('Product added!', 'success');
+                document.getElementById('addProductForm').reset();
+                document.getElementById('addProductModal').classList.remove('active');
+                loadAdminProducts();
+            } catch (err) {
+                showToast('Failed: ' + err.message, 'error');
+            }
+        }
+
+        async function loadPendingFunds() {
+            const { data: txs } = await supabase
+                .from('transactions')
+                .select('*, profiles!inner(full_name, email)')
+                .eq('type', 'deposit')
+                .eq('status', 'pending')
+                .order('created_at', { ascending: false });
+            
+            const container = document.getElementById('pendingFunds');
+            if (!txs?.length) {
+                container.innerHTML = '<p>No pending requests</p>';
+                return;
+            }
+            
+            container.innerHTML = txs.map(tx => `
+                <div class="transaction-item">
+                    <div>
+                        <strong>${tx.profiles.full_name || tx.profiles.email}</strong><br>
+                        <small>₦${tx.amount} via ${tx.method}${tx.reference ? ' • Ref: '+tx.reference : ''}</small>
+                    </div>
+                    <div>
+                        <button class="btn-primary" onclick="approveFund('${tx.id}', '${tx.user_id}', ${tx.amount})">Approve</button>
+                        <button class="btn-secondary" onclick="rejectFund('${tx.id}')">Reject</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function approveFund(txId, userId, amount) {
+            try {
+                // Update transaction
+                await supabase.from('transactions')
+                    .update({ status: 'completed' })
+                    .eq('id', txId);
+                
+                // Add balance
+                await supabase.rpc('add_user_balance', {
+                    p_user_id: userId,
+                    p_amount: amount,
+                    p_reason: 'Fund approval'
+                });
+                
+                showToast('Fund approved & balance updated!', 'success');
+                loadPendingFunds();
+            } catch (err) {
+                showToast('Failed: ' + err.message, 'error');
+            }
+        }
+
+        async function rejectFund(txId) {
+            try {
+                await supabase.from('transactions')
+                    .update({ status: 'failed' })
+                    .eq('id', txId);
+                showToast('Request rejected', 'success');
+                loadPendingFunds();
+            } catch (err) {
+                showToast('Failed: ' + err.message, 'error');
+            }
+        }
+
+        async function loadOpenTickets() {
+            const { data: tickets } = await supabase
+                .from('tickets')
+                .select('*, profiles!inner(full_name, email)')
+                .neq('status', 'closed')
+                .order('created_at', { ascending: false });
+            
+            const container = document.getElementById('openTickets');
+            if (!tickets?.length) {
+                container.innerHTML = '<p>No open tickets</p>';
+                return;
+            }
+            
+            container.innerHTML = tickets.map(t => `
+                <div class="ticket-item" onclick="adminViewTicket('${t.id}')">
+                    <div class="ticket-header">
+                        <strong>${t.subject}</strong>
+                        <span class="priority-badge ${t.priority}">${t.priority}</span>
+                    </div>
+                    <p><strong>User:</strong> ${t.profiles.full_name || t.profiles.email}</p>
+                    <p class="ticket-preview">${t.message.substring(0, 150)}...</p>
+                    <div class="ticket-meta">
+                        <span class="status-badge ${t.status}">${t.status}</span>
+                        <small>${new Date(t.created_at).toLocaleString()}</small>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function searchUsers() {
+            // Simple client-side filter
+            const query = document.getElementById('userSearch').value.toLowerCase();
+            document.querySelectorAll('.user-row').forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query) ? 'flex' : 'none';
+            });
+        }
+
+        function showAddProductModal() {
+            document.getElementById('addProductModal').classList.add('active');
+        }
+    </script>
+</body>
+</html>
