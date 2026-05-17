@@ -108,5 +108,28 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
     <script src="dashboard.js"></script>
+    <!-- Edit Profile Modal -->
+<div class="modal" id="editProfileModal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="toggleProfileModal()">&times;</button>
+        <h3>Edit Profile</h3>
+        <form id="profileForm" onsubmit="handleProfileUpdate(event)">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="profileName" required>
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="profileEmail" disabled style="opacity: 0.6;">
+            </div>
+            <div class="form-group">
+                <label>Phone (Optional)</label>
+                <input type="tel" id="profilePhone">
+            </div>
+            <button type="submit" class="btn-primary">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
+        </form>
+    </div>
 </body>
 </html>
