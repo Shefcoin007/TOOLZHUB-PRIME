@@ -8,23 +8,30 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <nav class="navbar">
+    <div class="animated-bg">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+    </div>
+
+    <nav class="navbar glass-effect">
         <div class="nav-container">
             <div class="logo" onclick="window.location.href='index.html'">
-                <img src="/logo-192.png" alt="ToolzHub" class="logo-img">
+                <img src="icon-192.png" alt="ToolzHub" class="logo-img">
                 <div class="logo-text">
                     <span class="logo-main">TOOLZ<span class="highlight">HUB</span></span>
                     <span class="logo-sub">PRIME</span>
                 </div>
             </div>
+            
             <div class="nav-menu">
-                <a href="dashboard.html" class="nav-link">Dashboard</a>
-                <a href="marketplace.html" class="nav-link active">Marketplace</a>
-                <a href="wallet.html" class="nav-link">Wallet</a>
-                <a href="support.html" class="nav-link">Support</a>
+                <a href="dashboard.html" class="nav-link"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="marketplace.html" class="nav-link active"><i class="fas fa-store"></i> Marketplace</a>
+                <a href="wallet.html" class="nav-link"><i class="fas fa-wallet"></i> Wallet</a>
+                <a href="support.html" class="nav-link"><i class="fas fa-headset"></i> Support</a>
             </div>
+
             <div class="nav-actions">
-                <button class="btn-cart" onclick="toggleCart()">
+                <button class="cart-btn" onclick="toggleCart()">
                     <i class="fas fa-shopping-cart"></i>
                     <span class="cart-count" id="cartCount">0</span>
                 </button>
@@ -35,41 +42,76 @@
         </div>
     </nav>
 
-    <main class="page">
+    <main class="marketplace-page">
         <div class="container">
-            <div class="page-header">
+            <!-- Header -->
+            <div class="page-header" data-aos="fade-down">
                 <h1>Marketplace</h1>
-                <p>Browse and purchase premium digital assets</p>
+                <p>Browse our premium digital assets</p>
             </div>
 
-            <div class="filters">
+            <!-- Search & Filter -->
+            <div class="marketplace-controls" data-aos="fade-up">
                 <div class="search-box">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" placeholder="Search products..." oninput="searchProducts()">
+                    <input type="text" id="searchInput" placeholder="Search products..." oninput="filterProducts()">
                 </div>
-                <div class="category-tabs">
-                    <button class="tab-btn active" onclick="filterProducts('all')">All</button>
-                    <button class="tab-btn" onclick="filterProducts('proxy')">Proxies</button>
-                    <button class="tab-btn" onclick="filterProducts('logs')">Logs</button>
-                    <button class="tab-btn" onclick="filterProducts('blueprint')">Blueprints</button>
-                    <button class="tab-btn" onclick="filterProducts('update')">Updates</button>
+                
+                <div class="category-filters">
+                    <button class="filter-btn active" onclick="filterByCategory('all')">
+                        <i class="fas fa-th"></i> All
+                    </button>
+                    <button class="filter-btn" onclick="filterByCategory('proxy')">
+                        <i class="fas fa-network-wired"></i> Proxies
+                    </button>
+                    <button class="filter-btn" onclick="filterByCategory('logs')">
+                        <i class="fas fa-database"></i> Logs
+                    </button>
+                    <button class="filter-btn" onclick="filterByCategory('blueprint')">
+                        <i class="fas fa-file-code"></i> Blueprints
+                    </button>
+                    <button class="filter-btn" onclick="filterByCategory('update')">
+                        <i class="fas fa-sync-alt"></i> Updates
+                    </button>
                 </div>
             </div>
 
-            <div class="products-grid" id="productsGrid">
-                <div class="loading">Loading products...</div>
+            <!-- Products Grid -->
+            <div class="products-grid-modern" id="productsGrid">
+                <div class="loading-grid">
+                    <div class="skeleton-product"></div>
+                    <div class="skeleton-product"></div>
+                    <div class="skeleton-product"></div>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <i class="fas fa-box-open"></i>
+                <h3>No products found</h3>
+                <p>Try adjusting your search or filters</p>
             </div>
         </div>
     </main>
 
-    <!-- Cart Modal (same as index.html) -->
-    <div class="modal" id="cartModal">
-        <div class="modal-content modal-large">
-            <button class="modal-close" onclick="toggleCart()">&times;</button>
-            <h3>Shopping Cart</h3>
-            <div id="cartItems"></div>
-            <div id="cartFooter" style="display:none;">
-                <div class="cart-total">Total: <span class="currency">₦</span><span id="cartTotal">0</span></div>
+    <!-- Cart Modal -->
+    <div class="modal modal-side" id="cartModal">
+        <div class="modal-content-side">
+            <div class="modal-header">
+                <h3><i class="fas fa-shopping-cart"></i> Shopping Cart</h3>
+                <button class="modal-close" onclick="toggleCart()">&times;</button>
+            </div>
+            <div id="cartItems" class="cart-items-modern">
+                <div class="empty-cart">
+                    <i class="fas fa-shopping-cart"></i>
+                    <p>Your cart is empty</p>
+                </div>
+            </div>
+            <div id="cartFooter" class="cart-footer-modern" style="display: none;">
+                <div class="cart-summary">
+                    <span>Total:</span>
+                    <span class="total-amount">₦<span id="cartTotal">0</span></span>
+                </div>
                 <button class="btn-checkout" onclick="checkout()">
                     <i class="fas fa-credit-card"></i> Checkout
                 </button>
@@ -77,22 +119,9 @@
         </div>
     </div>
 
-    <div class="toast" id="toast"></div>
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script src="app.js"></script>
-    <script>
-        // Page-specific init
-        document.addEventListener('DOMContentLoaded', async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                window.location.href = 'index.html';
-                return;
-            }
-            currentUser = session.user;
-            updateAuthUI(true);
-            loadProducts(); // From app.js
-        });
-    </script>
+    <script src="marketplace.js"></script>
 </body>
 </html>
