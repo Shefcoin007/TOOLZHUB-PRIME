@@ -3,9 +3,9 @@
 // ============================================
 
 // REPLACE THESE WITH YOUR ACTUAL SUPABASE CREDENTIALS
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
-const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID';
+const SUPABASE_URL = 'https://nhlbctiitrjqtfsnhyvt.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_sW1LcPyBiJcsGJhtyb1Xbw_vMZaJcAU';
+const GOOGLE_CLIENT_ID = '204905426386-1opadlvd43t0uldv5q7hbvhv4vhdakfk.apps.googleusercontent.com';
 
 // Initialize Supabase
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
