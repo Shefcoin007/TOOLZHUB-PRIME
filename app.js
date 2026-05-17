@@ -466,3 +466,59 @@ window.logout = logout;
 window.toggleTheme = toggleTheme;
 window.toggleMobileMenu = toggleMobileMenu;
 window.scrollTo = scrollTo;
+
+// Add this function to load products from LoggsPlug
+async function loadProductsFromLoggsPlug() {
+    try {
+        // Fetch from LoggsPlug API
+        const response = await fetch('https://loggsplug.online/api/v1/products', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                // Add API key if required
+                // 'Authorization': 'rsl_G1d2VNRaQrKvdy0Yt40bCbuU7oVruVlrJE9tkxlBiLvPT2FD'
+            }
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch from LoggsPlug');
+        
+        const data = await response.json();
+        
+        // Map LoggsPlug products to our format
+        products = (data.products || data).map(p => ({
+            id: p.id || p._id,
+            name: p.name || p.title || p.product_name,
+            category: p.category || 'general',
+            description: p.description || p.details || '',
+            price: p.price || p.amount || 0,
+            stock: p.stock || p.quantity || 999,
+            is_featured: p.featured || p.is_featured || false,
+            image: p.image || p.image_url || null
+        }));
+        
+        console.log('Loaded', products.length, 'products from LoggsPlug');
+        return true;
+        
+    } catch (err) {
+        console.error('LoggsPlug API error:', err);
+        return false;
+    }
+}
+
+// Update the main loadProducts function
+async function loadProducts() {
+    const grid = document.getElementById('productsGrid');
+    if (!grid) return;
+    
+    // Show loading state
+    grid.innerHTML = '<div class="loading-skeleton"><div class="skeleton" style="height: 300px;"></div></div>';
+    
+    // Try LoggsPlug first, fallback to Supabase
+    const success = await loadProductsFromLoggsPlug();
+    
+    if (!success || products.length === 0) {
+        await loadProductsFromSupabase();
+    }
+    
+    renderProducts(products);
+}
