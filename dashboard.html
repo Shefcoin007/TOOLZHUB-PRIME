@@ -18,45 +18,49 @@
         <div class="grid-overlay"></div>
     </div>
 
-    <!-- Navigation -->
-    <nav class="navbar glass-effect" id="navbar">
-        <div class="nav-container">
-            <div class="logo" onclick="window.location.href='index.html'">
-                <img src="icon-192.png" alt="ToolzHub" class="logo-img">
-                <div class="logo-text">
-                    <span class="logo-main">TOOLZ<span class="highlight">HUB</span></span>
-                    <span class="logo-sub">PRIME</span>
-                </div>
-            </div>
-            
-            <div class="nav-menu">
-                <a href="dashboard.html" class="nav-link active">
-                    <i class="fas fa-home"></i> Dashboard
-                </a>
-                <a href="marketplace.html" class="nav-link">
-                    <i class="fas fa-store"></i> Marketplace
-                </a>
-                <a href="wallet.html" class="nav-link">
-                    <i class="fas fa-wallet"></i> Wallet
-                </a>
-                <a href="support.html" class="nav-link">
-                    <i class="fas fa-headset"></i> Support
-                </a>
-            </div>
-
-            <div class="nav-actions">
-                <div class="user-menu">
-                    <div class="user-avatar" onclick="toggleProfileModal()">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div class="user-dropdown">
-                        <a href="#" onclick="toggleProfileModal()"><i class="fas fa-user-edit"></i> Edit Profile</a>
-                        <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
-                    </div>
-                </div>
-            </div>
+    <!-- Simplified Navigation -->
+<nav class="navbar" id="navbar">
+    <div class="nav-container">
+        <div class="logo" onclick="window.location.href='index.html'">
+            <img src="icon-192.png" alt="ToolzHub" class="logo-img">
+            <span class="logo-text">TOOLZ<span class="highlight">HUB</span></span>
         </div>
-    </nav>
+        
+        <div class="nav-menu" id="navMenu">
+            <a href="index.html" class="nav-link">Home</a>
+            <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <a href="marketplace.html" class="nav-link">Marketplace</a>
+            <a href="wallet.html" class="nav-link">Wallet</a>
+            <a href="support.html" class="nav-link">Support</a>
+        </div>
+
+        <div class="nav-actions">
+            <select id="currencySelect" onchange="changeCurrency(this.value)" class="currency-select">
+                <option value="NGN">₦ NGN</option>
+                <option value="USD">$ USD</option>
+                <option value="GBP">£ GBP</option>
+                <option value="EUR">€ EUR</option>
+            </select>
+            
+            <button class="btn-icon" onclick="toggleTheme()" title="Toggle Theme">
+                <i class="fas fa-moon" id="themeIcon"></i>
+            </button>
+            
+            <button class="btn-cart" onclick="toggleCart()">
+                <i class="fas fa-shopping-cart"></i>
+                <span class="cart-count" id="cartCount">0</span>
+            </button>
+            
+            <button class="btn-primary" id="authBtn" onclick="toggleAuthModal()">
+                <i class="fas fa-user"></i> <span>Get Started</span>
+            </button>
+        </div>
+        
+        <button class="mobile-toggle" onclick="toggleMobileMenu()">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+</nav>
 
     <!-- Main Content -->
     <main class="dashboard-page">
